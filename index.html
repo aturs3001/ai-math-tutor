@@ -1,24 +1,32 @@
 <!--
 ================================================================================
-AI Math Tutor - Frontend Application (Enhanced Version)
+AI Math Tutor - Frontend Application
 ================================================================================
 Student: Aric Hurkman
 Course: CSCI 250
 Final Project: AI Math Tutor
 Professor: Gheni Abla
 
-ENHANCED FEATURES:
-- KaTeX mathematical equation rendering
-- Copy-to-clipboard functionality for solutions
-- Math symbol input palette for easy equation entry
-- LaTeX expression support
-- Improved mathematical notation display
+This is the main frontend for the AI Math Tutor application.
+It provides a web-based interface for:
+1. Google Sign-In authentication
+2. User-provided Gemini API key management
+3. Inputting and solving math problems with AI-powered step-by-step solutions
+4. Taking quizzes to practice and test mathematical understanding
+5. Tracking quiz performance and progress
 
 Technologies used:
 - React 18: Frontend framework for building the UI
 - Tailwind CSS: Utility-first CSS framework for styling
 - Lucide React: Icon library for UI elements
-- KaTeX: Mathematical notation rendering (ENHANCED)
+- Google Identity Services: OAuth 2.0 authentication
+- KaTeX: Mathematical notation rendering
+
+Design Philosophy:
+- Modern educational aesthetic with warm, inviting colors
+- Clean typography optimized for readability
+- Interactive elements with smooth animations
+- Mobile-responsive layout
 ================================================================================
 -->
 <!DOCTYPE html>
@@ -31,7 +39,7 @@ Technologies used:
     <!-- Favicon using mathematical symbol -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
     
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS for utility-first styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Google Fonts -->
@@ -41,8 +49,10 @@ Technologies used:
     
     <!-- KaTeX for mathematical notation rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <!-- Google Identity Services for OAuth 2.0 Sign-In -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <!-- Tailwind Configuration -->
     <script>
@@ -55,60 +65,28 @@ Technologies used:
                     },
                     colors: {
                         'tutor': {
-                            50: '#f0fdfa',
-                            100: '#ccfbf1',
-                            200: '#99f6e4',
-                            300: '#5eead4',
-                            400: '#2dd4bf',
-                            500: '#14b8a6',
-                            600: '#0d9488',
-                            700: '#0f766e',
-                            800: '#115e59',
-                            900: '#134e4a',
+                            50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4',
+                            400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e',
+                            800: '#115e59', 900: '#134e4a',
                         },
                         'accent': {
-                            50: '#fffbeb',
-                            100: '#fef3c7',
-                            200: '#fde68a',
-                            300: '#fcd34d',
-                            400: '#fbbf24',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                            700: '#b45309',
-                            800: '#92400e',
-                            900: '#78350f',
+                            50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d',
+                            400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309',
+                            800: '#92400e', 900: '#78350f',
                         },
                         'cream': '#faf8f5',
                         'cream-dark': '#f5f0e8',
-                        'chalk': {
-                            DEFAULT: '#1e293b',
-                            light: '#334155',
-                        }
+                        'chalk': { DEFAULT: '#1e293b', light: '#334155' }
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.5s ease-out',
                         'slide-up': 'slideUp 0.4s ease-out',
                         'pulse-soft': 'pulseSoft 2s infinite',
-                        'bounce-in': 'bounceIn 0.3s ease-out',
                     },
                     keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' },
-                        },
-                        slideUp: {
-                            '0%': { opacity: '0', transform: 'translateY(20px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        },
-                        pulseSoft: {
-                            '0%, 100%': { opacity: '1' },
-                            '50%': { opacity: '0.7' },
-                        },
-                        bounceIn: {
-                            '0%': { transform: 'scale(0.9)', opacity: '0' },
-                            '50%': { transform: 'scale(1.02)' },
-                            '100%': { transform: 'scale(1)', opacity: '1' },
-                        }
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+                        pulseSoft: { '0%, 100%': { opacity: '1' }, '50%': { opacity: '0.7' } }
                     }
                 }
             }
@@ -117,164 +95,28 @@ Technologies used:
     
     <!-- Custom CSS Styles -->
     <style>
-        body {
-            font-family: 'Source Serif 4', Georgia, serif;
-            background-color: #faf8f5;
-        }
-        
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f5f0e8;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #14b8a6;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #0d9488;
-        }
-        
-        .math-content {
-            font-family: 'Source Serif 4', Georgia, serif;
-            line-height: 1.8;
-        }
-        
-        /* KaTeX styling enhancements */
-        .katex {
-            font-size: 1.1em;
-        }
-        
-        .katex-display {
-            margin: 1em 0;
-            overflow-x: auto;
-            overflow-y: hidden;
-        }
-        
-        .math-block {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 1rem 1.5rem;
-            margin: 0.5rem 0;
-            overflow-x: auto;
-        }
-        
-        .step-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .step-card:hover {
-            transform: translateX(8px);
-            box-shadow: -4px 0 0 #14b8a6;
-        }
-        
-        .quiz-option {
-            transition: all 0.2s ease;
-        }
-        
-        .quiz-option:hover {
-            transform: scale(1.02);
-        }
-        
-        .spinner {
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
+        body { font-family: 'Source Serif 4', Georgia, serif; background-color: #faf8f5; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f5f0e8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #14b8a6; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #0d9488; }
+        .math-content { font-family: 'Source Serif 4', Georgia, serif; line-height: 1.8; }
+        .step-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .step-card:hover { transform: translateX(8px); box-shadow: -4px 0 0 #14b8a6; }
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .gradient-text {
             background: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #f59e0b 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-        
         .pattern-bg {
-            background-image: 
-                radial-gradient(circle at 25px 25px, rgba(20, 184, 166, 0.05) 2px, transparent 0),
-                radial-gradient(circle at 75px 75px, rgba(245, 158, 11, 0.03) 2px, transparent 0);
+            background-image: radial-gradient(circle at 25px 25px, rgba(20, 184, 166, 0.05) 2px, transparent 0),
+                              radial-gradient(circle at 75px 75px, rgba(245, 158, 11, 0.03) 2px, transparent 0);
             background-size: 100px 100px;
         }
-        
-        .input-focus {
-            transition: all 0.2s ease;
-        }
-        
-        .input-focus:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.3);
-        }
-        
-        .btn-press:active {
-            transform: scale(0.98);
-        }
-        
-        /* Math symbol palette styles */
-        .symbol-btn {
-            transition: all 0.15s ease;
-            font-family: 'Times New Roman', serif;
-        }
-        
-        .symbol-btn:hover {
-            background-color: #14b8a6;
-            color: white;
-            transform: scale(1.1);
-        }
-        
-        .symbol-btn:active {
-            transform: scale(0.95);
-        }
-        
-        /* Copy button styles */
-        .copy-btn {
-            transition: all 0.2s ease;
-        }
-        
-        .copy-btn:hover {
-            background-color: #0d9488;
-        }
-        
-        .copy-btn.copied {
-            background-color: #10b981;
-        }
-        
-        /* Toast notification */
-        .toast {
-            animation: slideInRight 0.3s ease-out, fadeOut 0.3s ease-out 2s forwards;
-        }
-        
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-        
-        /* Staggered animation delays */
-        .stagger-1 { animation-delay: 0.1s; }
-        .stagger-2 { animation-delay: 0.2s; }
-        .stagger-3 { animation-delay: 0.3s; }
-        .stagger-4 { animation-delay: 0.4s; }
-        .stagger-5 { animation-delay: 0.5s; }
+        .input-focus { transition: all 0.2s ease; }
+        .input-focus:focus { outline: none; box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.3); }
+        .btn-press:active { transform: scale(0.98); }
     </style>
 </head>
 <body class="min-h-screen pattern-bg">
@@ -288,468 +130,88 @@ Technologies used:
     
     <!-- Main React Application -->
     <script type="text/babel">
-        const { useState, useEffect, useCallback, useMemo, useRef } = React;
+        const { useState, useEffect, useCallback } = React;
         
-        // ===========================================================================
-        // API CONFIGURATION
-        // ===========================================================================
+        // =======================================================================
+        // CONFIGURATION
+        // =======================================================================
         const API_BASE_URL = '/api';
         
-        // ===========================================================================
-        // MATH SYMBOLS AND EQUATIONS DATA
-        // ===========================================================================
+        // Storage keys for local storage
+        const STORAGE_KEYS = { USER: 'mathtutor_user', API_KEY: 'mathtutor_api_key' };
         
-        /**
-         * Mathematical symbols organized by category for the symbol palette
-         * Each symbol has a display character and the text to insert
-         */
-        const MATH_SYMBOLS = {
-            basic: [
-                { symbol: '+', insert: ' + ', label: 'Plus' },
-                { symbol: '−', insert: ' - ', label: 'Minus' },
-                { symbol: '×', insert: ' × ', label: 'Multiply' },
-                { symbol: '÷', insert: ' ÷ ', label: 'Divide' },
-                { symbol: '=', insert: ' = ', label: 'Equals' },
-                { symbol: '≠', insert: ' ≠ ', label: 'Not Equal' },
-                { symbol: '±', insert: ' ± ', label: 'Plus/Minus' },
-                { symbol: '∓', insert: ' ∓ ', label: 'Minus/Plus' },
-            ],
-            comparison: [
-                { symbol: '<', insert: ' < ', label: 'Less Than' },
-                { symbol: '>', insert: ' > ', label: 'Greater Than' },
-                { symbol: '≤', insert: ' ≤ ', label: 'Less or Equal' },
-                { symbol: '≥', insert: ' ≥ ', label: 'Greater or Equal' },
-                { symbol: '≈', insert: ' ≈ ', label: 'Approximately' },
-                { symbol: '∝', insert: ' ∝ ', label: 'Proportional' },
-            ],
-            algebra: [
-                { symbol: 'x²', insert: 'x²', label: 'Squared' },
-                { symbol: 'x³', insert: 'x³', label: 'Cubed' },
-                { symbol: 'xⁿ', insert: 'xⁿ', label: 'Power n' },
-                { symbol: '√', insert: '√()', label: 'Square Root' },
-                { symbol: '∛', insert: '∛()', label: 'Cube Root' },
-                { symbol: '|x|', insert: '|x|', label: 'Absolute Value' },
-                { symbol: '∞', insert: '∞', label: 'Infinity' },
-            ],
-            calculus: [
-                { symbol: '∫', insert: '∫', label: 'Integral' },
-                { symbol: '∬', insert: '∬', label: 'Double Integral' },
-                { symbol: '∂', insert: '∂', label: 'Partial' },
-                { symbol: 'd/dx', insert: 'd/dx', label: 'Derivative' },
-                { symbol: 'lim', insert: 'lim ', label: 'Limit' },
-                { symbol: '∑', insert: '∑', label: 'Summation' },
-                { symbol: '∏', insert: '∏', label: 'Product' },
-                { symbol: 'Δ', insert: 'Δ', label: 'Delta' },
-            ],
-            trigonometry: [
-                { symbol: 'sin', insert: 'sin()', label: 'Sine' },
-                { symbol: 'cos', insert: 'cos()', label: 'Cosine' },
-                { symbol: 'tan', insert: 'tan()', label: 'Tangent' },
-                { symbol: 'π', insert: 'π', label: 'Pi' },
-                { symbol: 'θ', insert: 'θ', label: 'Theta' },
-                { symbol: '°', insert: '°', label: 'Degree' },
-                { symbol: 'rad', insert: ' rad', label: 'Radian' },
-            ],
-            greek: [
-                { symbol: 'α', insert: 'α', label: 'Alpha' },
-                { symbol: 'β', insert: 'β', label: 'Beta' },
-                { symbol: 'γ', insert: 'γ', label: 'Gamma' },
-                { symbol: 'δ', insert: 'δ', label: 'Delta' },
-                { symbol: 'ε', insert: 'ε', label: 'Epsilon' },
-                { symbol: 'λ', insert: 'λ', label: 'Lambda' },
-                { symbol: 'μ', insert: 'μ', label: 'Mu' },
-                { symbol: 'σ', insert: 'σ', label: 'Sigma' },
-                { symbol: 'φ', insert: 'φ', label: 'Phi' },
-                { symbol: 'ω', insert: 'ω', label: 'Omega' },
-            ],
-            sets: [
-                { symbol: '∈', insert: ' ∈ ', label: 'Element Of' },
-                { symbol: '∉', insert: ' ∉ ', label: 'Not Element' },
-                { symbol: '⊂', insert: ' ⊂ ', label: 'Subset' },
-                { symbol: '⊆', insert: ' ⊆ ', label: 'Subset Equal' },
-                { symbol: '∪', insert: ' ∪ ', label: 'Union' },
-                { symbol: '∩', insert: ' ∩ ', label: 'Intersection' },
-                { symbol: '∅', insert: '∅', label: 'Empty Set' },
-                { symbol: 'ℝ', insert: 'ℝ', label: 'Real Numbers' },
-            ],
-            fractions: [
-                { symbol: '½', insert: '½', label: 'One Half' },
-                { symbol: '⅓', insert: '⅓', label: 'One Third' },
-                { symbol: '¼', insert: '¼', label: 'One Fourth' },
-                { symbol: '⅔', insert: '⅔', label: 'Two Thirds' },
-                { symbol: '¾', insert: '¾', label: 'Three Fourths' },
-                { symbol: 'a/b', insert: '//', label: 'Fraction' },
-            ],
+        // Config will be loaded from server
+        let APP_CONFIG = {
+            google_client_id: '',
+            use_google_auth: false
         };
         
-        // ===========================================================================
-        // UTILITY FUNCTIONS
-        // ===========================================================================
-        
-        /**
-         * Renders mathematical expressions using KaTeX
-         * Detects LaTeX patterns and renders them properly
-         * @param {string} text - Text that may contain math expressions
-         * @returns {string} - HTML string with rendered math
-         */
-        const renderMath = (text) => {
-            if (!text || typeof text !== 'string') return text;
-            
-            // Check if KaTeX is loaded
-            if (typeof katex === 'undefined') return text;
-            
-            let result = text;
-            
-            // Pattern for display math ($$...$$)
-            result = result.replace(/\$\$(.*?)\$\$/g, (match, math) => {
-                try {
-                    return katex.renderToString(math, { 
-                        displayMode: true,
-                        throwOnError: false 
-                    });
-                } catch (e) {
-                    return match;
-                }
-            });
-            
-            // Pattern for inline math ($...$)
-            result = result.replace(/\$([^$]+)\$/g, (match, math) => {
-                try {
-                    return katex.renderToString(math, { 
-                        displayMode: false,
-                        throwOnError: false 
-                    });
-                } catch (e) {
-                    return match;
-                }
-            });
-            
-            // Pattern for common math expressions without $ delimiters
-            // Detect patterns like x^2, sqrt(), fractions, etc.
-            const mathPatterns = [
-                // Fractions: a/b patterns
-                /(\d+)\/(\d+)/g,
-                // Powers: x^n
-                /([a-zA-Z])(\^)(\d+)/g,
-            ];
-            
-            return result;
-        };
-        
-        /**
-         * Copies text to clipboard and returns success status
-         * @param {string} text - Text to copy
-         * @returns {Promise<boolean>} - Success status
-         */
-        const copyToClipboard = async (text) => {
+        // Fetch configuration from server
+        const loadConfig = async () => {
             try {
-                await navigator.clipboard.writeText(text);
-                return true;
-            } catch (err) {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                textArea.style.position = 'fixed';
-                textArea.style.left = '-9999px';
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    return true;
-                } catch (e) {
-                    document.body.removeChild(textArea);
-                    return false;
+                const response = await fetch(`${API_BASE_URL}/config`);
+                if (response.ok) {
+                    APP_CONFIG = await response.json();
                 }
+            } catch (err) {
+                console.log('Could not load config, using defaults');
             }
         };
         
-        // ===========================================================================
+        // =======================================================================
         // API SERVICE FUNCTIONS
-        // ===========================================================================
+        // =======================================================================
+        const getStoredApiKey = () => localStorage.getItem(STORAGE_KEYS.API_KEY);
+        
+        const getAuthHeaders = () => ({
+            'Content-Type': 'application/json',
+            'X-API-Key': getStoredApiKey() || ''
+        });
+        
+        const verifyApiKey = async (apiKey) => {
+            const response = await fetch(`${API_BASE_URL}/verify-key`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey }
+            });
+            return response.json();
+        };
         
         const solveProblem = async (problem) => {
             const response = await fetch(`${API_BASE_URL}/solve`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ problem }),
+                method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ problem })
             });
-            
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to solve problem');
-            }
-            
+            if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to solve problem'); }
             return response.json();
         };
         
         const generateQuiz = async (topic, numQuestions = 3, difficulty = 'mixed') => {
             const response = await fetch(`${API_BASE_URL}/quiz/generate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic, num_questions: numQuestions, difficulty }),
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ topic, num_questions: numQuestions, difficulty })
             });
-            
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to generate quiz');
-            }
-            
+            if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to generate quiz'); }
             return response.json();
         };
         
         const evaluateAnswer = async (question, correctAnswer, studentAnswer) => {
             const response = await fetch(`${API_BASE_URL}/quiz/evaluate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    question, 
-                    correct_answer: correctAnswer, 
-                    student_answer: studentAnswer 
-                }),
+                method: 'POST', headers: getAuthHeaders(),
+                body: JSON.stringify({ question, correct_answer: correctAnswer, student_answer: studentAnswer })
             });
-            
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to evaluate answer');
-            }
-            
+            if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to evaluate answer'); }
             return response.json();
         };
         
-        // ===========================================================================
-        // TOAST NOTIFICATION COMPONENT
-        // ===========================================================================
-        
-        /**
-         * Toast notification for copy feedback
-         */
-        const Toast = ({ message, visible, type = 'success' }) => {
-            if (!visible) return null;
-            
-            return (
-                <div className={`fixed top-4 right-4 z-50 toast px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 ${
-                    type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                }`}>
-                    {type === 'success' ? (
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                    ) : (
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18"/>
-                            <line x1="6" y1="6" x2="18" y2="18"/>
-                        </svg>
-                    )}
-                    <span className="font-display font-medium">{message}</span>
-                </div>
-            );
-        };
-        
-        // ===========================================================================
-        // COPY BUTTON COMPONENT
-        // ===========================================================================
-        
-        /**
-         * Reusable copy button component
-         */
-        const CopyButton = ({ text, label = "Copy", size = "sm", showToast }) => {
-            const [copied, setCopied] = useState(false);
-            
-            const handleCopy = async () => {
-                const success = await copyToClipboard(text);
-                if (success) {
-                    setCopied(true);
-                    showToast('Copied to clipboard!', 'success');
-                    setTimeout(() => setCopied(false), 2000);
-                } else {
-                    showToast('Failed to copy', 'error');
-                }
-            };
-            
-            const sizeClasses = {
-                sm: 'px-2 py-1 text-xs',
-                md: 'px-3 py-1.5 text-sm',
-                lg: 'px-4 py-2 text-base',
-            };
-            
-            return (
-                <button
-                    onClick={handleCopy}
-                    className={`copy-btn ${sizeClasses[size]} rounded-lg font-display font-medium 
-                              flex items-center gap-1.5 transition-all
-                              ${copied 
-                                  ? 'bg-green-500 text-white' 
-                                  : 'bg-tutor-500 text-white hover:bg-tutor-600'
-                              }`}
-                    title={label}
-                >
-                    {copied ? (
-                        <>
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="20 6 9 17 4 12"/>
-                            </svg>
-                            Copied
-                        </>
-                    ) : (
-                        <>
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                            </svg>
-                            {label}
-                        </>
-                    )}
-                </button>
-            );
-        };
-        
-        // ===========================================================================
-        // MATH SYMBOL PALETTE COMPONENT
-        // ===========================================================================
-        
-        /**
-         * Math symbol input palette for easy equation entry
-         */
-        const MathSymbolPalette = ({ onInsert, isOpen, onToggle }) => {
-            const [activeCategory, setActiveCategory] = useState('basic');
-            
-            const categories = [
-                { id: 'basic', label: 'Basic', icon: '±' },
-                { id: 'comparison', label: 'Compare', icon: '≤' },
-                { id: 'algebra', label: 'Algebra', icon: 'x²' },
-                { id: 'calculus', label: 'Calculus', icon: '∫' },
-                { id: 'trigonometry', label: 'Trig', icon: 'sin' },
-                { id: 'greek', label: 'Greek', icon: 'α' },
-                { id: 'sets', label: 'Sets', icon: '∈' },
-                { id: 'fractions', label: 'Fractions', icon: '½' },
-            ];
-            
-            return (
-                <div className="mt-3">
-                    {/* Toggle Button */}
-                    <button
-                        onClick={onToggle}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-display font-medium text-sm
-                                  transition-all ${isOpen 
-                                      ? 'bg-tutor-100 text-tutor-700 border-2 border-tutor-500' 
-                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
-                                  }`}
-                    >
-                        <span className="text-lg">∑</span>
-                        Math Symbols
-                        <svg 
-                            className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
-                            viewBox="0 0 24 24" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            strokeWidth="2"
-                        >
-                            <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                    </button>
-                    
-                    {/* Symbol Palette */}
-                    {isOpen && (
-                        <div className="mt-3 p-4 bg-white rounded-xl border-2 border-tutor-200 shadow-lg animate-bounce-in">
-                            {/* Category Tabs */}
-                            <div className="flex flex-wrap gap-1 mb-4 pb-3 border-b border-gray-200">
-                                {categories.map((cat) => (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => setActiveCategory(cat.id)}
-                                        className={`px-3 py-1.5 rounded-lg text-sm font-display font-medium
-                                                  transition-all ${activeCategory === cat.id
-                                                      ? 'bg-tutor-500 text-white'
-                                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                  }`}
-                                    >
-                                        <span className="mr-1">{cat.icon}</span>
-                                        {cat.label}
-                                    </button>
-                                ))}
-                            </div>
-                            
-                            {/* Symbols Grid */}
-                            <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
-                                {MATH_SYMBOLS[activeCategory].map((item, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => onInsert(item.insert)}
-                                        className="symbol-btn w-10 h-10 rounded-lg bg-gray-100 
-                                                 flex items-center justify-center text-lg
-                                                 text-gray-700 font-medium"
-                                        title={item.label}
-                                    >
-                                        {item.symbol}
-                                    </button>
-                                ))}
-                            </div>
-                            
-                            {/* Quick Tips */}
-                            <div className="mt-4 pt-3 border-t border-gray-200">
-                                <p className="text-xs text-gray-500 font-display">
-                                    💡 Tip: Click a symbol to insert it at cursor position
-                                </p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-        
-        // ===========================================================================
-        // MATH DISPLAY COMPONENT
-        // ===========================================================================
-        
-        /**
-         * Component to display mathematical content with proper rendering
-         */
-        const MathDisplay = ({ content, className = "", showCopy = false, showToast }) => {
-            const contentRef = useRef(null);
-            
-            // Render KaTeX after component mounts
-            useEffect(() => {
-                if (contentRef.current && typeof renderMathInElement !== 'undefined') {
-                    renderMathInElement(contentRef.current, {
-                        delimiters: [
-                            { left: '$$', right: '$$', display: true },
-                            { left: '$', right: '$', display: false },
-                            { left: '\\[', right: '\\]', display: true },
-                            { left: '\\(', right: '\\)', display: false },
-                        ],
-                        throwOnError: false,
-                    });
-                }
-            }, [content]);
-            
-            return (
-                <div className={`relative group ${className}`}>
-                    <div ref={contentRef} className="math-content">
-                        {content}
-                    </div>
-                    {showCopy && (
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <CopyButton text={content} size="sm" showToast={showToast} />
-                        </div>
-                    )}
-                </div>
-            );
-        };
-        
-        // ===========================================================================
-        // UI COMPONENTS
-        // ===========================================================================
-        
+        // =======================================================================
+        // REUSABLE UI COMPONENTS
+        // =======================================================================
         const LoadingSpinner = ({ message = "Thinking..." }) => (
             <div className="flex flex-col items-center justify-center py-12 animate-fade-in">
                 <div className="relative">
                     <div className="w-16 h-16 border-4 border-tutor-200 rounded-full"></div>
                     <div className="w-16 h-16 border-4 border-tutor-500 rounded-full absolute top-0 left-0 spinner border-t-transparent"></div>
                 </div>
-                <p className="mt-4 text-tutor-700 font-display font-medium animate-pulse-soft">
-                    {message}
-                </p>
+                <p className="mt-4 text-tutor-700 font-display font-medium animate-pulse-soft">{message}</p>
             </div>
         );
         
@@ -758,9 +220,7 @@ Technologies used:
                 <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-6 h-6 text-red-500">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                         </svg>
                     </div>
                     <div className="flex-1">
@@ -768,13 +228,9 @@ Technologies used:
                         <p className="text-red-700 mt-1">{message}</p>
                     </div>
                     {onDismiss && (
-                        <button 
-                            onClick={onDismiss}
-                            className="text-red-400 hover:text-red-600 transition-colors"
-                        >
+                        <button onClick={onDismiss} className="text-red-400 hover:text-red-600 transition-colors">
                             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <line x1="18" y1="6" x2="6" y2="18"/>
-                                <line x1="6" y1="6" x2="18" y2="18"/>
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                             </svg>
                         </button>
                     )}
@@ -783,136 +239,254 @@ Technologies used:
         );
         
         const TabButton = ({ active, onClick, children }) => (
-            <button
-                onClick={onClick}
-                className={`
-                    px-6 py-3 font-display font-semibold text-lg rounded-xl
-                    transition-all duration-300 btn-press
-                    ${active 
-                        ? 'bg-tutor-600 text-white shadow-lg shadow-tutor-600/30' 
-                        : 'bg-white text-tutor-700 hover:bg-tutor-50 border border-tutor-200'
-                    }
-                `}
-            >
+            <button onClick={onClick}
+                className={`px-6 py-3 font-display font-semibold text-lg rounded-xl transition-all duration-300 btn-press
+                    ${active ? 'bg-tutor-600 text-white shadow-lg shadow-tutor-600/30' : 'bg-white text-tutor-700 hover:bg-tutor-50 border border-tutor-200'}`}>
                 {children}
             </button>
         );
         
-        // ===========================================================================
-        // PROBLEM SOLVER COMPONENT (ENHANCED)
-        // ===========================================================================
+        // =======================================================================
+        // LOGIN SCREEN COMPONENT
+        // =======================================================================
+        const LoginScreen = ({ onLogin }) => {
+            const [user, setUser] = useState(null);
+            const [apiKey, setApiKey] = useState('');
+            const [email, setEmail] = useState('');
+            const [name, setName] = useState('');
+            const [verifying, setVerifying] = useState(false);
+            const [error, setError] = useState(null);
+            const [step, setStep] = useState('signin'); // 'signin' or 'apikey'
+            const [configLoaded, setConfigLoaded] = useState(false);
+            const [useGoogleAuth, setUseGoogleAuth] = useState(false);
+            
+            const handleGoogleCallback = useCallback((response) => {
+                const credential = response.credential;
+                const payload = JSON.parse(atob(credential.split('.')[1]));
+                const userData = { id: payload.sub, email: payload.email, name: payload.name, picture: payload.picture, authType: 'google' };
+                setUser(userData);
+                setStep('apikey');
+                localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+            }, []);
+            
+            useEffect(() => {
+                const initializeLogin = async () => {
+                    // Load config from server
+                    await loadConfig();
+                    setUseGoogleAuth(APP_CONFIG.use_google_auth);
+                    setConfigLoaded(true);
+                    
+                    // Check for existing session
+                    const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+                    const storedApiKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
+                    
+                    if (storedUser && storedApiKey) { 
+                        onLogin(JSON.parse(storedUser), storedApiKey); 
+                        return; 
+                    }
+                    if (storedUser) { 
+                        setUser(JSON.parse(storedUser)); 
+                        setStep('apikey'); 
+                    }
+                    
+                    // Initialize Google Sign-In if configured
+                    if (APP_CONFIG.use_google_auth && APP_CONFIG.google_client_id && window.google) {
+                        window.google.accounts.id.initialize({ 
+                            client_id: APP_CONFIG.google_client_id, 
+                            callback: handleGoogleCallback 
+                        });
+                        // Small delay to ensure DOM is ready
+                        setTimeout(() => {
+                            const btnContainer = document.getElementById('google-signin-btn');
+                            if (btnContainer) {
+                                window.google.accounts.id.renderButton(btnContainer,
+                                    { theme: 'outline', size: 'large', type: 'standard', shape: 'rectangular', text: 'signin_with', logo_alignment: 'left' });
+                            }
+                        }, 100);
+                    }
+                };
+                
+                initializeLogin();
+            }, [handleGoogleCallback, onLogin]);
+            
+            const handleSimpleLogin = () => {
+                if (!name.trim()) { setError('Please enter your name'); return; }
+                if (!email.trim() || !email.includes('@')) { setError('Please enter a valid email'); return; }
+                
+                const userData = { 
+                    id: 'user_' + Date.now(), 
+                    email: email.trim(), 
+                    name: name.trim(), 
+                    picture: null,
+                    authType: 'email'
+                };
+                setUser(userData);
+                setStep('apikey');
+                localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+                setError(null);
+            };
+            
+            const handleApiKeySubmit = async () => {
+                if (!apiKey.trim()) { setError('Please enter your Gemini API key'); return; }
+                setVerifying(true); setError(null);
+                try {
+                    const result = await verifyApiKey(apiKey);
+                    if (result.valid) { localStorage.setItem(STORAGE_KEYS.API_KEY, apiKey); onLogin(user, apiKey); }
+                    else { setError(result.error || 'Invalid API key'); }
+                } catch (err) { setError('Failed to verify API key. Please try again.'); }
+                finally { setVerifying(false); }
+            };
+            
+            const handleContinueAsGuest = () => {
+                const guestUser = { id: 'guest', email: 'guest@example.com', name: 'Guest User', picture: null, authType: 'guest' };
+                setUser(guestUser); setStep('apikey');
+                localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(guestUser));
+            };
+            
+            // Show loading while config loads
+            if (!configLoaded) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-4">
+                        <div className="text-center">
+                            <div className="w-16 h-16 border-4 border-tutor-200 border-t-tutor-500 rounded-full spinner mx-auto"></div>
+                            <p className="mt-4 text-tutor-700 font-display">Loading...</p>
+                        </div>
+                    </div>
+                );
+            }
+            
+            return (
+                <div className="min-h-screen flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/10 p-8 max-w-md w-full animate-fade-in">
+                        <div className="text-center mb-8">
+                            <div className="w-20 h-20 bg-gradient-to-br from-tutor-400 to-accent-400 rounded-2xl flex items-center justify-center text-4xl shadow-lg shadow-tutor-500/30 mx-auto mb-4">📐</div>
+                            <h1 className="font-display font-bold text-3xl gradient-text">AI Math Tutor</h1>
+                            <p className="text-gray-500 mt-2">Learn mathematics step-by-step with AI</p>
+                        </div>
+                        
+                        {step === 'signin' && (
+                            <div className="space-y-6">
+                                <div className="text-center">
+                                    <h2 className="font-display font-semibold text-xl text-chalk mb-2">Welcome!</h2>
+                                    <p className="text-gray-500 text-sm">Sign in to get started</p>
+                                </div>
+                                
+                                {/* Google Sign-In (if configured) */}
+                                {useGoogleAuth && (
+                                    <>
+                                        <div className="flex justify-center">
+                                            <div id="google-signin-btn"></div>
+                                        </div>
+                                        <div className="relative">
+                                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div>
+                                            <div className="relative flex justify-center text-sm"><span className="px-4 bg-white text-gray-500">or sign in with email</span></div>
+                                        </div>
+                                    </>
+                                )}
+                                
+                                {/* Simple Email/Name Login Form */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block font-display font-medium text-gray-700 mb-2">Your Name</label>
+                                        <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+                                            placeholder="Enter your name"
+                                            className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all input-focus"/>
+                                    </div>
+                                    <div>
+                                        <label className="block font-display font-medium text-gray-700 mb-2">Email Address</label>
+                                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && handleSimpleLogin()}
+                                            placeholder="you@example.com"
+                                            className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all input-focus"/>
+                                    </div>
+                                    {error && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
+                                    <button onClick={handleSimpleLogin}
+                                        className="w-full bg-gradient-to-r from-tutor-600 to-tutor-500 text-white font-display font-semibold py-3 px-6 rounded-xl shadow-lg shadow-tutor-600/30 hover:from-tutor-700 hover:to-tutor-600 transition-all btn-press flex items-center justify-center gap-2">
+                                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                                        </svg>
+                                        Continue
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {step === 'apikey' && (
+                            <div className="space-y-6">
+                                {user && (
+                                    <div className="flex items-center gap-3 p-3 bg-tutor-50 rounded-xl">
+                                        {user.picture ? (
+                                            <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full"/>
+                                        ) : (
+                                            <div className="w-10 h-10 bg-tutor-200 rounded-full flex items-center justify-center">
+                                                <span className="text-tutor-700 font-display font-bold">{user.name?.[0] || 'G'}</span>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <p className="font-display font-medium text-tutor-800">{user.name}</p>
+                                            <p className="text-sm text-tutor-600">{user.email}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                <div>
+                                    <h2 className="font-display font-semibold text-xl text-chalk mb-2">Enter Your Gemini API Key</h2>
+                                    <p className="text-gray-500 text-sm">Your API key is stored locally and never sent to our servers.</p>
+                                </div>
+                                <div>
+                                    <label className="block font-display font-medium text-gray-700 mb-2">Gemini API Key</label>
+                                    <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleApiKeySubmit()} placeholder="AIza..."
+                                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all input-focus"/>
+                                </div>
+                                {error && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
+                                <button onClick={handleApiKeySubmit} disabled={verifying || !apiKey.trim()}
+                                    className="w-full bg-gradient-to-r from-tutor-600 to-tutor-500 text-white font-display font-semibold py-3 px-6 rounded-xl shadow-lg shadow-tutor-600/30 hover:from-tutor-700 hover:to-tutor-600 disabled:from-gray-300 disabled:to-gray-300 disabled:shadow-none transition-all btn-press flex items-center justify-center gap-2">
+                                    {verifying ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spinner"></div>Verifying...</>) : 'Start Learning'}
+                                </button>
+                                <div className="text-center">
+                                    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-tutor-600 hover:text-tutor-700 text-sm font-medium">
+                                        Get a FREE API key →
+                                    </a>
+                                </div>
+                                <button onClick={() => { setStep('signin'); setUser(null); setError(null); localStorage.removeItem(STORAGE_KEYS.USER); }}
+                                    className="w-full py-2 text-gray-500 hover:text-gray-700 text-sm">← Back to sign in</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
         
-        const ProblemSolver = ({ showToast }) => {
+        // =======================================================================
+        // PROBLEM SOLVER COMPONENT
+        // =======================================================================
+        const ProblemSolver = () => {
             const [problem, setProblem] = useState('');
             const [solution, setSolution] = useState(null);
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState(null);
-            const [showSymbolPalette, setShowSymbolPalette] = useState(false);
-            const textareaRef = useRef(null);
             
             const exampleProblems = [
-                "Solve for x: 2x + 5 = 13",
-                "Find the derivative of f(x) = x³ + 2x² - 5x + 3",
-                "Calculate the area of a triangle with base 8 and height 12",
-                "Simplify: (3x² + 2x - 1) + (x² - 4x + 5)",
-                "Find sin(45°)",
-                "Solve the system: 2x + y = 10, x - y = 2"
+                "Solve for x: 2x + 5 = 13", "Find the derivative of f(x) = x³ + 2x² - 5x + 3",
+                "Calculate the area of a triangle with base 8 and height 12", "Simplify: (3x² + 2x - 1) + (x² - 4x + 5)",
+                "Find sin(45°)", "Solve the system: 2x + y = 10, x - y = 2"
             ];
             
-            /**
-             * Inserts a math symbol at the cursor position in the textarea
-             */
-            const insertSymbol = (symbol) => {
-                const textarea = textareaRef.current;
-                if (!textarea) return;
-                
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const text = problem;
-                
-                const newText = text.substring(0, start) + symbol + text.substring(end);
-                setProblem(newText);
-                
-                // Set cursor position after the inserted symbol
-                setTimeout(() => {
-                    textarea.focus();
-                    const newPos = start + symbol.length;
-                    textarea.setSelectionRange(newPos, newPos);
-                }, 0);
-            };
-            
             const handleSolve = async () => {
-                if (!problem.trim()) {
-                    setError('Please enter a math problem to solve.');
-                    return;
-                }
-                
-                setLoading(true);
-                setError(null);
-                setSolution(null);
-                
-                try {
-                    const result = await solveProblem(problem);
-                    setSolution(result);
-                } catch (err) {
-                    setError(err.message);
-                } finally {
-                    setLoading(false);
-                }
-            };
-            
-            const handleKeyPress = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSolve();
-                }
-            };
-            
-            /**
-             * Generates a copyable text version of the entire solution
-             */
-            const getSolutionText = () => {
-                if (!solution) return '';
-                
-                let text = `Problem Type: ${solution.problem_type || 'Mathematical Problem'}\n\n`;
-                
-                if (solution.concepts && solution.concepts.length > 0) {
-                    text += `Concepts Used: ${solution.concepts.join(', ')}\n\n`;
-                }
-                
-                text += `STEP-BY-STEP SOLUTION:\n`;
-                text += `${'='.repeat(40)}\n\n`;
-                
-                if (solution.steps) {
-                    solution.steps.forEach((step, index) => {
-                        text += `Step ${step.step_number || index + 1}: ${step.action}\n`;
-                        text += `Explanation: ${step.explanation}\n`;
-                        if (step.result) {
-                            text += `Result: ${step.result}\n`;
-                        }
-                        text += '\n';
-                    });
-                }
-                
-                text += `${'='.repeat(40)}\n`;
-                text += `FINAL ANSWER: ${solution.final_answer}\n`;
-                
-                if (solution.verification) {
-                    text += `\nVerification: ${solution.verification}\n`;
-                }
-                
-                return text;
+                if (!problem.trim()) { setError('Please enter a math problem to solve.'); return; }
+                setLoading(true); setError(null); setSolution(null);
+                try { const result = await solveProblem(problem); setSolution(result); }
+                catch (err) { setError(err.message); }
+                finally { setLoading(false); }
             };
             
             return (
                 <div className="space-y-8 animate-fade-in">
-                    {/* Problem Input Section */}
                     <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 p-8 border border-tutor-100">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-12 h-12 bg-tutor-100 rounded-xl flex items-center justify-center">
                                 <svg className="w-6 h-6 text-tutor-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                                 </svg>
                             </div>
                             <div>
@@ -920,72 +494,25 @@ Technologies used:
                                 <p className="text-gray-500">Type any math problem and get a detailed solution</p>
                             </div>
                         </div>
-                        
-                        {/* Problem Textarea */}
                         <div className="relative">
-                            <textarea
-                                ref={textareaRef}
-                                value={problem}
-                                onChange={(e) => setProblem(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                placeholder="Example: Solve for x: 2x² + 5x - 3 = 0"
-                                className="w-full h-32 p-4 text-lg border-2 border-tutor-200 rounded-xl 
-                                         focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 
-                                         transition-all resize-none input-focus
-                                         placeholder:text-gray-400 font-body"
-                            />
-                            <span className="absolute bottom-3 right-3 text-sm text-gray-400">
-                                {problem.length} characters
-                            </span>
+                            <textarea value={problem} onChange={(e) => setProblem(e.target.value)}
+                                onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSolve(); }}}
+                                placeholder="Example: Solve for x: 2x + 5 = 13"
+                                className="w-full h-32 p-4 text-lg border-2 border-tutor-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all resize-none input-focus placeholder:text-gray-400"/>
+                            <span className="absolute bottom-3 right-3 text-sm text-gray-400">{problem.length} characters</span>
                         </div>
-                        
-                        {/* Math Symbol Palette */}
-                        <MathSymbolPalette 
-                            onInsert={insertSymbol}
-                            isOpen={showSymbolPalette}
-                            onToggle={() => setShowSymbolPalette(!showSymbolPalette)}
-                        />
-                        
-                        {/* Solve Button */}
-                        <button
-                            onClick={handleSolve}
-                            disabled={loading || !problem.trim()}
-                            className="mt-4 w-full bg-gradient-to-r from-tutor-600 to-tutor-500 
-                                     text-white font-display font-semibold text-lg py-4 px-8 
-                                     rounded-xl shadow-lg shadow-tutor-600/30
-                                     hover:from-tutor-700 hover:to-tutor-600 
-                                     disabled:from-gray-300 disabled:to-gray-300 disabled:shadow-none
-                                     transition-all duration-300 btn-press
-                                     flex items-center justify-center gap-2"
-                        >
-                            {loading ? (
-                                <>
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spinner"></div>
-                                    Solving...
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <circle cx="11" cy="11" r="8"/>
-                                        <path d="m21 21-4.35-4.35"/>
-                                    </svg>
-                                    Solve Problem
-                                </>
+                        <button onClick={handleSolve} disabled={loading || !problem.trim()}
+                            className="mt-4 w-full bg-gradient-to-r from-tutor-600 to-tutor-500 text-white font-display font-semibold text-lg py-4 px-8 rounded-xl shadow-lg shadow-tutor-600/30 hover:from-tutor-700 hover:to-tutor-600 disabled:from-gray-300 disabled:to-gray-300 disabled:shadow-none transition-all duration-300 btn-press flex items-center justify-center gap-2">
+                            {loading ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spinner"></div>Solving...</>) : (
+                                <><svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Solve Problem</>
                             )}
                         </button>
-                        
-                        {/* Example Problems */}
                         <div className="mt-6">
                             <p className="text-sm text-gray-500 mb-3 font-display font-medium">Try an example:</p>
                             <div className="flex flex-wrap gap-2">
                                 {exampleProblems.map((example, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => setProblem(example)}
-                                        className="text-sm px-3 py-1.5 bg-tutor-50 text-tutor-700 
-                                                 rounded-lg hover:bg-tutor-100 transition-colors
-                                                 border border-tutor-200"
-                                    >
+                                    <button key={index} onClick={() => setProblem(example)}
+                                        className="text-sm px-3 py-1.5 bg-tutor-50 text-tutor-700 rounded-lg hover:bg-tutor-100 transition-colors border border-tutor-200">
                                         {example.length > 35 ? example.substring(0, 35) + '...' : example}
                                     </button>
                                 ))}
@@ -993,143 +520,69 @@ Technologies used:
                         </div>
                     </div>
                     
-                    {/* Error Display */}
                     {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
+                    {loading && <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 p-8 border border-tutor-100"><LoadingSpinner message="Analyzing your problem..." /></div>}
                     
-                    {/* Loading State */}
-                    {loading && (
-                        <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 p-8 border border-tutor-100">
-                            <LoadingSpinner message="Analyzing your problem..." />
-                        </div>
-                    )}
-                    
-                    {/* Solution Display */}
                     {solution && !loading && (
                         <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 overflow-hidden border border-tutor-100 animate-slide-up">
-                            {/* Solution Header with Copy All Button */}
                             <div className="bg-gradient-to-r from-tutor-600 to-tutor-500 p-6 text-white">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <polyline points="20 6 9 17 4 12"/>
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-display font-bold text-xl">Solution</h3>
-                                            <p className="text-tutor-100 text-sm">{solution.problem_type || 'Mathematical Problem'}</p>
-                                        </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
                                     </div>
-                                    <CopyButton 
-                                        text={getSolutionText()} 
-                                        label="Copy All" 
-                                        size="md" 
-                                        showToast={showToast}
-                                    />
+                                    <div>
+                                        <h3 className="font-display font-bold text-xl">Solution</h3>
+                                        <p className="text-tutor-100 text-sm">{solution.problem_type || 'Mathematical Problem'}</p>
+                                    </div>
                                 </div>
                             </div>
-                            
                             <div className="p-6 space-y-6">
-                                {/* Concepts Used */}
                                 {solution.concepts && solution.concepts.length > 0 && (
                                     <div>
                                         <h4 className="font-display font-semibold text-lg text-chalk mb-3">Concepts Used</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {solution.concepts.map((concept, i) => (
-                                                <span 
-                                                    key={i}
-                                                    className="px-3 py-1 bg-accent-100 text-accent-800 rounded-full text-sm font-medium"
-                                                >
-                                                    {concept}
-                                                </span>
+                                                <span key={i} className="px-3 py-1 bg-accent-100 text-accent-800 rounded-full text-sm font-medium">{concept}</span>
                                             ))}
                                         </div>
                                     </div>
                                 )}
-                                
-                                {/* Step-by-Step Solution */}
                                 <div>
                                     <h4 className="font-display font-semibold text-lg text-chalk mb-4">Step-by-Step Solution</h4>
                                     <div className="space-y-4">
                                         {solution.steps && solution.steps.map((step, index) => (
-                                            <div 
-                                                key={index}
-                                                className={`step-card bg-gray-50 rounded-xl p-5 border-l-4 border-tutor-400 group relative`}
-                                            >
+                                            <div key={index} className="step-card bg-gray-50 rounded-xl p-5 border-l-4 border-tutor-400">
                                                 <div className="flex items-start gap-4">
-                                                    <div className="flex-shrink-0 w-8 h-8 bg-tutor-600 text-white rounded-lg 
-                                                                  flex items-center justify-center font-display font-bold text-sm">
+                                                    <div className="flex-shrink-0 w-8 h-8 bg-tutor-600 text-white rounded-lg flex items-center justify-center font-display font-bold text-sm">
                                                         {step.step_number || index + 1}
                                                     </div>
                                                     <div className="flex-1">
-                                                        <h5 className="font-display font-semibold text-chalk">
-                                                            {step.action}
-                                                        </h5>
-                                                        <MathDisplay 
-                                                            content={step.explanation}
-                                                            className="text-gray-600 mt-1"
-                                                        />
+                                                        <h5 className="font-display font-semibold text-chalk">{step.action}</h5>
+                                                        <p className="text-gray-600 mt-1 math-content">{step.explanation}</p>
                                                         {step.result && (
-                                                            <div className="mt-3 p-3 bg-white rounded-lg border border-tutor-200 math-block">
-                                                                <MathDisplay 
-                                                                    content={step.result}
-                                                                    className="text-tutor-700 font-mono"
-                                                                    showCopy={true}
-                                                                    showToast={showToast}
-                                                                />
+                                                            <div className="mt-3 p-3 bg-white rounded-lg border border-tutor-200">
+                                                                <code className="text-tutor-700 font-mono">{step.result}</code>
                                                             </div>
                                                         )}
                                                     </div>
-                                                </div>
-                                                {/* Copy Step Button */}
-                                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <CopyButton 
-                                                        text={`Step ${step.step_number || index + 1}: ${step.action}\n${step.explanation}${step.result ? '\nResult: ' + step.result : ''}`}
-                                                        label="Copy"
-                                                        size="sm"
-                                                        showToast={showToast}
-                                                    />
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
-                                
-                                {/* Final Answer */}
-                                <div className="bg-gradient-to-r from-accent-50 to-accent-100 rounded-xl p-6 border border-accent-200 relative group">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="font-display font-semibold text-lg text-accent-900 mb-2">
-                                            Final Answer
-                                        </h4>
-                                        <CopyButton 
-                                            text={solution.final_answer}
-                                            label="Copy Answer"
-                                            size="md"
-                                            showToast={showToast}
-                                        />
-                                    </div>
-                                    <MathDisplay 
-                                        content={solution.final_answer}
-                                        className="text-2xl font-display font-bold text-accent-800"
-                                    />
+                                <div className="bg-gradient-to-r from-accent-50 to-accent-100 rounded-xl p-6 border border-accent-200">
+                                    <h4 className="font-display font-semibold text-lg text-accent-900 mb-2">Final Answer</h4>
+                                    <p className="text-2xl font-display font-bold text-accent-800">{solution.final_answer}</p>
                                 </div>
-                                
-                                {/* Verification */}
                                 {solution.verification && (
-                                    <div className="bg-tutor-50 rounded-xl p-5 border border-tutor-200 group relative">
+                                    <div className="bg-tutor-50 rounded-xl p-5 border border-tutor-200">
                                         <h4 className="font-display font-semibold text-tutor-800 mb-2 flex items-center gap-2">
                                             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-                                                <path d="m9 12 2 2 4-4"/>
+                                                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/>
                                             </svg>
                                             How to Verify
                                         </h4>
-                                        <MathDisplay 
-                                            content={solution.verification}
-                                            className="text-tutor-700"
-                                            showCopy={true}
-                                            showToast={showToast}
-                                        />
+                                        <p className="text-tutor-700 math-content">{solution.verification}</p>
                                     </div>
                                 )}
                             </div>
@@ -1139,11 +592,10 @@ Technologies used:
             );
         };
         
-        // ===========================================================================
-        // QUIZ MODE COMPONENT (ENHANCED)
-        // ===========================================================================
-        
-        const QuizMode = ({ showToast }) => {
+        // =======================================================================
+        // QUIZ MODE COMPONENT
+        // =======================================================================
+        const QuizMode = () => {
             const [topic, setTopic] = useState('algebra');
             const [difficulty, setDifficulty] = useState('mixed');
             const [numQuestions, setNumQuestions] = useState(3);
@@ -1156,16 +608,11 @@ Technologies used:
             const [evaluating, setEvaluating] = useState(false);
             const [error, setError] = useState(null);
             const [quizComplete, setQuizComplete] = useState(false);
-            const [showSymbolPalette, setShowSymbolPalette] = useState(false);
-            const answerInputRef = useRef(null);
             
             const topics = [
-                { value: 'algebra', label: 'Algebra', emoji: '📊' },
-                { value: 'geometry', label: 'Geometry', emoji: '📐' },
-                { value: 'calculus', label: 'Calculus', emoji: '∫' },
-                { value: 'trigonometry', label: 'Trigonometry', emoji: '📈' },
-                { value: 'statistics', label: 'Statistics', emoji: '📉' },
-                { value: 'linear algebra', label: 'Linear Algebra', emoji: '🔢' },
+                { value: 'algebra', label: 'Algebra', emoji: '📊' }, { value: 'geometry', label: 'Geometry', emoji: '📐' },
+                { value: 'calculus', label: 'Calculus', emoji: '∫' }, { value: 'trigonometry', label: 'Trigonometry', emoji: '📈' },
+                { value: 'statistics', label: 'Statistics', emoji: '📉' }, { value: 'linear algebra', label: 'Linear Algebra', emoji: '🔢' },
             ];
             
             const difficulties = [
@@ -1175,98 +622,43 @@ Technologies used:
                 { value: 'mixed', label: 'Mixed', color: 'bg-purple-100 text-purple-700' },
             ];
             
-            const insertSymbolInAnswer = (symbol) => {
-                const input = answerInputRef.current;
-                if (!input) return;
-                
-                const currentAnswer = userAnswers[currentQuestion] || '';
-                const start = input.selectionStart;
-                const end = input.selectionEnd;
-                
-                const newAnswer = currentAnswer.substring(0, start) + symbol + currentAnswer.substring(end);
-                setUserAnswers(prev => ({ ...prev, [currentQuestion]: newAnswer }));
-                
-                setTimeout(() => {
-                    input.focus();
-                    const newPos = start + symbol.length;
-                    input.setSelectionRange(newPos, newPos);
-                }, 0);
-            };
-            
             const handleGenerateQuiz = async () => {
-                setLoading(true);
-                setError(null);
-                setQuiz(null);
-                setCurrentQuestion(0);
-                setUserAnswers({});
-                setResults({});
-                setQuizComplete(false);
-                setShowHint(false);
-                
-                try {
-                    const result = await generateQuiz(topic, numQuestions, difficulty);
-                    setQuiz(result);
-                } catch (err) {
-                    setError(err.message);
-                } finally {
-                    setLoading(false);
-                }
+                setLoading(true); setError(null); setQuiz(null); setCurrentQuestion(0);
+                setUserAnswers({}); setResults({}); setQuizComplete(false); setShowHint(false);
+                try { const result = await generateQuiz(topic, numQuestions, difficulty); setQuiz(result); }
+                catch (err) { setError(err.message); }
+                finally { setLoading(false); }
             };
             
             const handleSubmitAnswer = async () => {
                 if (!quiz || !quiz.questions[currentQuestion]) return;
-                
                 const question = quiz.questions[currentQuestion];
                 const userAnswer = userAnswers[currentQuestion] || '';
-                
-                if (!userAnswer.trim()) {
-                    setError('Please enter an answer before submitting.');
-                    return;
-                }
-                
-                setEvaluating(true);
-                setError(null);
-                
+                if (!userAnswer.trim()) { setError('Please enter an answer before submitting.'); return; }
+                setEvaluating(true); setError(null);
                 try {
-                    const result = await evaluateAnswer(
-                        question.question,
-                        question.correct_answer,
-                        userAnswer
-                    );
-                    
+                    const result = await evaluateAnswer(question.question, question.correct_answer, userAnswer);
                     setResults(prev => ({ ...prev, [currentQuestion]: result }));
-                } catch (err) {
-                    setError(err.message);
-                } finally {
-                    setEvaluating(false);
-                }
+                } catch (err) { setError(err.message); }
+                finally { setEvaluating(false); }
             };
             
             const handleNextQuestion = () => {
                 setShowHint(false);
-                setShowSymbolPalette(false);
-                if (currentQuestion < quiz.questions.length - 1) {
-                    setCurrentQuestion(prev => prev + 1);
-                } else {
-                    setQuizComplete(true);
-                }
+                if (currentQuestion < quiz.questions.length - 1) { setCurrentQuestion(prev => prev + 1); }
+                else { setQuizComplete(true); }
             };
             
             const handleResetQuiz = () => {
-                setQuiz(null);
-                setCurrentQuestion(0);
-                setUserAnswers({});
-                setResults({});
-                setQuizComplete(false);
-                setShowHint(false);
+                setQuiz(null); setCurrentQuestion(0); setUserAnswers({});
+                setResults({}); setQuizComplete(false); setShowHint(false);
             };
             
             const calculateScore = () => {
                 if (!quiz) return { correct: 0, total: 0, percentage: 0 };
                 const correct = Object.values(results).filter(r => r.is_correct).length;
                 const total = quiz.questions.length;
-                const percentage = Math.round((correct / total) * 100);
-                return { correct, total, percentage };
+                return { correct, total, percentage: Math.round((correct / total) * 100) };
             };
             
             const currentQuestionData = quiz?.questions?.[currentQuestion];
@@ -1275,7 +667,6 @@ Technologies used:
             
             return (
                 <div className="space-y-8 animate-fade-in">
-                    {/* Quiz Setup */}
                     {!quiz && !loading && (
                         <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 p-8 border border-tutor-100">
                             <div className="flex items-center gap-3 mb-8">
@@ -1289,106 +680,48 @@ Technologies used:
                                     <p className="text-gray-500">Test your understanding with AI-generated problems</p>
                                 </div>
                             </div>
-                            
-                            {/* Topic Selection */}
                             <div className="mb-6">
                                 <label className="block font-display font-semibold text-chalk mb-3">Choose a Topic</label>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {topics.map((t) => (
-                                        <button
-                                            key={t.value}
-                                            onClick={() => setTopic(t.value)}
-                                            className={`p-4 rounded-xl border-2 transition-all btn-press
-                                                ${topic === t.value 
-                                                    ? 'border-tutor-500 bg-tutor-50 text-tutor-700' 
-                                                    : 'border-gray-200 bg-white hover:border-tutor-300'
-                                                }`}
-                                        >
+                                        <button key={t.value} onClick={() => setTopic(t.value)}
+                                            className={`p-4 rounded-xl border-2 transition-all btn-press ${topic === t.value ? 'border-tutor-500 bg-tutor-50 text-tutor-700' : 'border-gray-200 bg-white hover:border-tutor-300'}`}>
                                             <span className="text-2xl">{t.emoji}</span>
                                             <span className="block font-display font-medium mt-1">{t.label}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                            
-                            {/* Difficulty Selection */}
                             <div className="mb-6">
                                 <label className="block font-display font-semibold text-chalk mb-3">Difficulty Level</label>
                                 <div className="flex flex-wrap gap-3">
                                     {difficulties.map((d) => (
-                                        <button
-                                            key={d.value}
-                                            onClick={() => setDifficulty(d.value)}
-                                            className={`px-5 py-2 rounded-lg font-display font-medium transition-all btn-press
-                                                ${difficulty === d.value 
-                                                    ? `${d.color} ring-2 ring-offset-2 ring-current` 
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                }`}
-                                        >
+                                        <button key={d.value} onClick={() => setDifficulty(d.value)}
+                                            className={`px-5 py-2 rounded-lg font-display font-medium transition-all btn-press ${difficulty === d.value ? `${d.color} ring-2 ring-offset-2 ring-current` : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                                             {d.label}
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                            
-                            {/* Number of Questions */}
                             <div className="mb-8">
-                                <label className="block font-display font-semibold text-chalk mb-3">
-                                    Number of Questions: {numQuestions}
-                                </label>
-                                <input
-                                    type="range"
-                                    min="1"
-                                    max="10"
-                                    value={numQuestions}
-                                    onChange={(e) => setNumQuestions(parseInt(e.target.value))}
-                                    className="w-full h-2 bg-tutor-200 rounded-lg appearance-none cursor-pointer
-                                             [&::-webkit-slider-thumb]:appearance-none
-                                             [&::-webkit-slider-thumb]:w-5
-                                             [&::-webkit-slider-thumb]:h-5
-                                             [&::-webkit-slider-thumb]:rounded-full
-                                             [&::-webkit-slider-thumb]:bg-tutor-600
-                                             [&::-webkit-slider-thumb]:cursor-pointer
-                                             [&::-webkit-slider-thumb]:shadow-lg"
-                                />
-                                <div className="flex justify-between text-sm text-gray-500 mt-1">
-                                    <span>1</span>
-                                    <span>5</span>
-                                    <span>10</span>
-                                </div>
+                                <label className="block font-display font-semibold text-chalk mb-3">Number of Questions: {numQuestions}</label>
+                                <input type="range" min="1" max="10" value={numQuestions} onChange={(e) => setNumQuestions(parseInt(e.target.value))}
+                                    className="w-full h-2 bg-tutor-200 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-tutor-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg"/>
+                                <div className="flex justify-between text-sm text-gray-500 mt-1"><span>1</span><span>5</span><span>10</span></div>
                             </div>
-                            
-                            <button
-                                onClick={handleGenerateQuiz}
-                                className="w-full bg-gradient-to-r from-accent-500 to-accent-400 
-                                         text-white font-display font-semibold text-lg py-4 px-8 
-                                         rounded-xl shadow-lg shadow-accent-500/30
-                                         hover:from-accent-600 hover:to-accent-500 
-                                         transition-all duration-300 btn-press
-                                         flex items-center justify-center gap-2"
-                            >
-                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <polygon points="5 3 19 12 5 21 5 3"/>
-                                </svg>
+                            <button onClick={handleGenerateQuiz}
+                                className="w-full bg-gradient-to-r from-accent-500 to-accent-400 text-white font-display font-semibold text-lg py-4 px-8 rounded-xl shadow-lg shadow-accent-500/30 hover:from-accent-600 hover:to-accent-500 transition-all duration-300 btn-press flex items-center justify-center gap-2">
+                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                                 Start Quiz
                             </button>
                         </div>
                     )}
                     
-                    {/* Loading */}
-                    {loading && (
-                        <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 p-8 border border-tutor-100">
-                            <LoadingSpinner message="Generating your quiz..." />
-                        </div>
-                    )}
-                    
-                    {/* Error */}
+                    {loading && <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 p-8 border border-tutor-100"><LoadingSpinner message="Generating your quiz..." /></div>}
                     {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
                     
-                    {/* Active Quiz */}
                     {quiz && !quizComplete && currentQuestionData && (
                         <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 overflow-hidden border border-tutor-100 animate-slide-up">
-                            {/* Quiz Header */}
                             <div className="bg-gradient-to-r from-accent-500 to-accent-400 p-6 text-white">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -1397,183 +730,65 @@ Technologies used:
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {quiz.questions.map((_, idx) => (
-                                            <div
-                                                key={idx}
-                                                className={`w-3 h-3 rounded-full transition-all ${
-                                                    idx === currentQuestion 
-                                                        ? 'bg-white scale-125' 
-                                                        : idx < currentQuestion 
-                                                            ? results[idx]?.is_correct 
-                                                                ? 'bg-green-300' 
-                                                                : 'bg-red-300'
-                                                            : 'bg-white/30'
-                                                }`}
-                                            />
+                                            <div key={idx} className={`w-3 h-3 rounded-full transition-all ${idx === currentQuestion ? 'bg-white scale-125' : idx < currentQuestion ? results[idx]?.is_correct ? 'bg-green-300' : 'bg-red-300' : 'bg-white/30'}`}/>
                                         ))}
                                     </div>
                                 </div>
                             </div>
-                            
                             <div className="p-6 space-y-6">
-                                {/* Difficulty Badge */}
                                 <div className="flex items-center gap-2">
-                                    <span className={`px-3 py-1 rounded-full text-sm font-medium
-                                        ${currentQuestionData.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
-                                          currentQuestionData.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                          'bg-red-100 text-red-700'}`}>
+                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${currentQuestionData.difficulty === 'easy' ? 'bg-green-100 text-green-700' : currentQuestionData.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
                                         {currentQuestionData.difficulty?.charAt(0).toUpperCase() + currentQuestionData.difficulty?.slice(1) || 'Mixed'}
                                     </span>
                                 </div>
-                                
-                                {/* Question */}
-                                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 group relative">
-                                    <MathDisplay 
-                                        content={currentQuestionData.question}
-                                        className="text-xl text-chalk"
-                                    />
-                                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <CopyButton 
-                                            text={currentQuestionData.question}
-                                            label="Copy"
-                                            size="sm"
-                                            showToast={showToast}
-                                        />
-                                    </div>
+                                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                    <p className="text-xl text-chalk math-content">{currentQuestionData.question}</p>
                                 </div>
-                                
-                                {/* Hint */}
                                 {currentQuestionData.hint && !currentResult && (
                                     <div>
-                                        <button
-                                            onClick={() => setShowHint(!showHint)}
-                                            className="text-tutor-600 font-display font-medium flex items-center gap-2 hover:text-tutor-700"
-                                        >
-                                            <svg className={`w-4 h-4 transition-transform ${showHint ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <polyline points="9 18 15 12 9 6"/>
-                                            </svg>
+                                        <button onClick={() => setShowHint(!showHint)} className="text-tutor-600 font-display font-medium flex items-center gap-2 hover:text-tutor-700">
+                                            <svg className={`w-4 h-4 transition-transform ${showHint ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                                             {showHint ? 'Hide Hint' : 'Show Hint'}
                                         </button>
-                                        {showHint && (
-                                            <div className="mt-3 p-4 bg-tutor-50 rounded-lg border border-tutor-200 animate-fade-in">
-                                                <MathDisplay content={currentQuestionData.hint} className="text-tutor-700" />
-                                            </div>
-                                        )}
+                                        {showHint && <div className="mt-3 p-4 bg-tutor-50 rounded-lg border border-tutor-200 animate-fade-in"><p className="text-tutor-700">{currentQuestionData.hint}</p></div>}
                                     </div>
                                 )}
-                                
-                                {/* Answer Input */}
                                 {!currentResult && (
                                     <div>
                                         <label className="block font-display font-semibold text-chalk mb-2">Your Answer</label>
-                                        <input
-                                            ref={answerInputRef}
-                                            type="text"
-                                            value={userAnswers[currentQuestion] || ''}
-                                            onChange={(e) => setUserAnswers(prev => ({ ...prev, [currentQuestion]: e.target.value }))}
-                                            onKeyPress={(e) => e.key === 'Enter' && handleSubmitAnswer()}
-                                            placeholder="Enter your answer..."
-                                            className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl 
-                                                     focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 
-                                                     transition-all input-focus"
-                                        />
-                                        
-                                        {/* Mini Symbol Palette for Quiz */}
-                                        <MathSymbolPalette 
-                                            onInsert={insertSymbolInAnswer}
-                                            isOpen={showSymbolPalette}
-                                            onToggle={() => setShowSymbolPalette(!showSymbolPalette)}
-                                        />
-                                        
-                                        <button
-                                            onClick={handleSubmitAnswer}
-                                            disabled={evaluating || !userAnswers[currentQuestion]?.trim()}
-                                            className="mt-4 w-full bg-tutor-600 text-white font-display font-semibold 
-                                                     py-3 px-6 rounded-xl hover:bg-tutor-700 
-                                                     disabled:bg-gray-300 transition-all btn-press
-                                                     flex items-center justify-center gap-2"
-                                        >
-                                            {evaluating ? (
-                                                <>
-                                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spinner"></div>
-                                                    Checking...
-                                                </>
-                                            ) : 'Submit Answer'}
+                                        <input type="text" value={userAnswers[currentQuestion] || ''} onChange={(e) => setUserAnswers(prev => ({ ...prev, [currentQuestion]: e.target.value }))}
+                                            onKeyPress={(e) => e.key === 'Enter' && handleSubmitAnswer()} placeholder="Enter your answer..."
+                                            className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all input-focus"/>
+                                        <button onClick={handleSubmitAnswer} disabled={evaluating || !userAnswers[currentQuestion]?.trim()}
+                                            className="mt-4 w-full bg-tutor-600 text-white font-display font-semibold py-3 px-6 rounded-xl hover:bg-tutor-700 disabled:bg-gray-300 transition-all btn-press flex items-center justify-center gap-2">
+                                            {evaluating ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spinner"></div>Checking...</>) : 'Submit Answer'}
                                         </button>
                                     </div>
                                 )}
-                                
-                                {/* Result Feedback */}
                                 {currentResult && (
-                                    <div className={`rounded-xl p-6 animate-slide-up ${
-                                        currentResult.is_correct 
-                                            ? 'bg-green-50 border border-green-200' 
-                                            : 'bg-red-50 border border-red-200'
-                                    }`}>
+                                    <div className={`rounded-xl p-6 animate-slide-up ${currentResult.is_correct ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
                                         <div className="flex items-center gap-3 mb-3">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                                currentResult.is_correct ? 'bg-green-500' : 'bg-red-500'
-                                            }`}>
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${currentResult.is_correct ? 'bg-green-500' : 'bg-red-500'}`}>
                                                 {currentResult.is_correct ? (
-                                                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <polyline points="20 6 9 17 4 12"/>
-                                                    </svg>
+                                                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
                                                 ) : (
-                                                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <line x1="18" y1="6" x2="6" y2="18"/>
-                                                        <line x1="6" y1="6" x2="18" y2="18"/>
-                                                    </svg>
+                                                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                                                 )}
                                             </div>
-                                            <h4 className={`font-display font-bold text-xl ${
-                                                currentResult.is_correct ? 'text-green-800' : 'text-red-800'
-                                            }`}>
+                                            <h4 className={`font-display font-bold text-xl ${currentResult.is_correct ? 'text-green-800' : 'text-red-800'}`}>
                                                 {currentResult.is_correct ? 'Correct!' : 'Not Quite Right'}
                                             </h4>
                                         </div>
-                                        
-                                        <p className={currentResult.is_correct ? 'text-green-700' : 'text-red-700'}>
-                                            {currentResult.feedback}
-                                        </p>
-                                        
+                                        <p className={currentResult.is_correct ? 'text-green-700' : 'text-red-700'}>{currentResult.feedback}</p>
                                         {!currentResult.is_correct && currentResult.explanation && (
-                                            <div className="mt-4 p-4 bg-white rounded-lg border border-red-200 group relative">
-                                                <p className="text-gray-700">
-                                                    <span className="font-semibold">Correct answer: </span>
-                                                    <MathDisplay content={currentQuestionData.correct_answer} className="inline" />
-                                                </p>
+                                            <div className="mt-4 p-4 bg-white rounded-lg border border-red-200">
+                                                <p className="text-gray-700"><span className="font-semibold">Correct answer: </span>{currentQuestionData.correct_answer}</p>
                                                 <p className="text-gray-600 mt-2">{currentResult.explanation}</p>
-                                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <CopyButton 
-                                                        text={currentQuestionData.correct_answer}
-                                                        size="sm"
-                                                        showToast={showToast}
-                                                    />
-                                                </div>
                                             </div>
                                         )}
-                                        
-                                        <button
-                                            onClick={handleNextQuestion}
-                                            className="mt-4 w-full bg-chalk text-white font-display font-semibold 
-                                                     py-3 px-6 rounded-xl hover:bg-chalk-light transition-all btn-press
-                                                     flex items-center justify-center gap-2"
-                                        >
-                                            {currentQuestion < quiz.questions.length - 1 ? (
-                                                <>
-                                                    Next Question
-                                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <polyline points="9 18 15 12 9 6"/>
-                                                    </svg>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    See Results
-                                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                                        <polyline points="22 4 12 14.01 9 11.01"/>
-                                                    </svg>
-                                                </>
-                                            )}
+                                        <button onClick={handleNextQuestion}
+                                            className="mt-4 w-full bg-chalk text-white font-display font-semibold py-3 px-6 rounded-xl hover:bg-chalk-light transition-all btn-press flex items-center justify-center gap-2">
+                                            {currentQuestion < quiz.questions.length - 1 ? (<>Next Question<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg></>) : (<>See Results<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></>)}
                                         </button>
                                     </div>
                                 )}
@@ -1581,23 +796,15 @@ Technologies used:
                         </div>
                     )}
                     
-                    {/* Quiz Complete */}
                     {quizComplete && quiz && (
                         <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 overflow-hidden border border-tutor-100 animate-slide-up">
-                            <div className={`p-8 text-white ${
-                                score.percentage >= 70 
-                                    ? 'bg-gradient-to-r from-green-500 to-green-400' 
-                                    : score.percentage >= 40 
-                                        ? 'bg-gradient-to-r from-yellow-500 to-yellow-400'
-                                        : 'bg-gradient-to-r from-red-500 to-red-400'
-                            }`}>
+                            <div className={`p-8 text-white ${score.percentage >= 70 ? 'bg-gradient-to-r from-green-500 to-green-400' : score.percentage >= 40 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' : 'bg-gradient-to-r from-red-500 to-red-400'}`}>
                                 <div className="text-center">
                                     <h3 className="font-display font-bold text-3xl mb-2">Quiz Complete!</h3>
                                     <div className="text-6xl font-display font-bold">{score.percentage}%</div>
                                     <p className="text-xl mt-2 opacity-90">{score.correct} out of {score.total} correct</p>
                                 </div>
                             </div>
-                            
                             <div className="p-6 space-y-6">
                                 <div className="text-center">
                                     <p className="text-lg text-gray-600">
@@ -1607,62 +814,30 @@ Technologies used:
                                          "Keep studying! Practice makes perfect! 📚"}
                                     </p>
                                 </div>
-                                
                                 <div>
                                     <h4 className="font-display font-semibold text-lg text-chalk mb-4">Question Summary</h4>
                                     <div className="space-y-3">
                                         {quiz.questions.map((q, idx) => (
-                                            <div 
-                                                key={idx}
-                                                className={`p-4 rounded-lg border group relative ${
-                                                    results[idx]?.is_correct 
-                                                        ? 'bg-green-50 border-green-200' 
-                                                        : 'bg-red-50 border-red-200'
-                                                }`}
-                                            >
+                                            <div key={idx} className={`p-4 rounded-lg border ${results[idx]?.is_correct ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                                                 <div className="flex items-start gap-3">
-                                                    <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm ${
-                                                        results[idx]?.is_correct ? 'bg-green-500' : 'bg-red-500'
-                                                    }`}>
+                                                    <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm ${results[idx]?.is_correct ? 'bg-green-500' : 'bg-red-500'}`}>
                                                         {results[idx]?.is_correct ? '✓' : '✗'}
                                                     </div>
-                                                    <div className="flex-1">
-                                                        <MathDisplay content={q.question} className="text-gray-700 font-medium" />
+                                                    <div>
+                                                        <p className="text-gray-700 font-medium">{q.question}</p>
                                                         <p className="text-sm text-gray-500 mt-1">
-                                                            Your answer: {userAnswers[idx] || 'No answer'} 
-                                                            {!results[idx]?.is_correct && (
-                                                                <span className="text-green-600"> | Correct: {q.correct_answer}</span>
-                                                            )}
+                                                            Your answer: {userAnswers[idx] || 'No answer'}
+                                                            {!results[idx]?.is_correct && <span className="text-green-600"> | Correct: {q.correct_answer}</span>}
                                                         </p>
                                                     </div>
-                                                </div>
-                                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <CopyButton 
-                                                        text={`Q: ${q.question}\nYour Answer: ${userAnswers[idx] || 'No answer'}\nCorrect: ${q.correct_answer}`}
-                                                        size="sm"
-                                                        showToast={showToast}
-                                                    />
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
-                                
                                 <div className="flex gap-4">
-                                    <button
-                                        onClick={handleResetQuiz}
-                                        className="flex-1 bg-tutor-600 text-white font-display font-semibold 
-                                                 py-3 px-6 rounded-xl hover:bg-tutor-700 transition-all btn-press"
-                                    >
-                                        New Quiz
-                                    </button>
-                                    <button
-                                        onClick={handleGenerateQuiz}
-                                        className="flex-1 bg-accent-500 text-white font-display font-semibold 
-                                                 py-3 px-6 rounded-xl hover:bg-accent-600 transition-all btn-press"
-                                    >
-                                        Try Again
-                                    </button>
+                                    <button onClick={handleResetQuiz} className="flex-1 bg-tutor-600 text-white font-display font-semibold py-3 px-6 rounded-xl hover:bg-tutor-700 transition-all btn-press">New Quiz</button>
+                                    <button onClick={handleGenerateQuiz} className="flex-1 bg-accent-500 text-white font-display font-semibold py-3 px-6 rounded-xl hover:bg-accent-600 transition-all btn-press">Try Again</button>
                                 </div>
                             </div>
                         </div>
@@ -1671,50 +846,51 @@ Technologies used:
             );
         };
         
-        // ===========================================================================
-        // MAIN APPLICATION COMPONENT
-        // ===========================================================================
-        
+        // =======================================================================
+        // MAIN APP COMPONENT
+        // =======================================================================
         const App = () => {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [user, setUser] = useState(null);
             const [activeTab, setActiveTab] = useState('solver');
-            const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
             
-            const showToast = (message, type = 'success') => {
-                setToast({ visible: true, message, type });
-                setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 2500);
+            const handleLogin = (userData, apiKey) => { setUser(userData); setIsLoggedIn(true); };
+            
+            const handleLogout = () => {
+                localStorage.removeItem(STORAGE_KEYS.USER);
+                localStorage.removeItem(STORAGE_KEYS.API_KEY);
+                setUser(null); setIsLoggedIn(false);
             };
+            
+            if (!isLoggedIn) return <LoginScreen onLogin={handleLogin} />;
             
             return (
                 <div className="min-h-screen">
-                    {/* Toast Notification */}
-                    <Toast {...toast} />
-                    
-                    {/* Header */}
                     <header className="bg-chalk text-white py-8 px-4">
                         <div className="max-w-4xl mx-auto">
-                            <div className="flex items-center justify-center gap-4 mb-4">
-                                <div className="w-14 h-14 bg-gradient-to-br from-tutor-400 to-accent-400 
-                                              rounded-2xl flex items-center justify-center text-3xl
-                                              shadow-lg shadow-tutor-500/30 rotate-3 hover:rotate-0 transition-transform">
-                                    📐
+                            <div className="flex justify-end mb-4">
+                                <div className="flex items-center gap-3">
+                                    {user?.picture ? <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full"/> : (
+                                        <div className="w-8 h-8 bg-tutor-400 rounded-full flex items-center justify-center">
+                                            <span className="text-white font-display font-bold text-sm">{user?.name?.[0] || 'G'}</span>
+                                        </div>
+                                    )}
+                                    <span className="text-gray-300 text-sm">{user?.name}</span>
+                                    <button onClick={handleLogout} className="text-gray-400 hover:text-white text-sm ml-2">Sign Out</button>
                                 </div>
-                                <h1 className="font-display font-bold text-4xl md:text-5xl">
-                                    <span className="gradient-text">AI Math Tutor</span>
-                                </h1>
                             </div>
-                            
+                            <div className="flex items-center justify-center gap-4 mb-4">
+                                <div className="w-14 h-14 bg-gradient-to-br from-tutor-400 to-accent-400 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-tutor-500/30 rotate-3 hover:rotate-0 transition-transform">📐</div>
+                                <h1 className="font-display font-bold text-4xl md:text-5xl"><span className="gradient-text">AI Math Tutor</span></h1>
+                            </div>
                             <p className="text-center text-gray-300 text-lg max-w-xl mx-auto">
-                                Learn mathematics step-by-step with AI-powered explanations. 
-                                Solve problems, understand concepts, and practice with quizzes.
+                                Learn mathematics step-by-step with AI-powered explanations. Solve problems, understand concepts, and practice with quizzes.
                             </p>
-                            
                             <div className="flex justify-center gap-4 mt-8">
                                 <TabButton active={activeTab === 'solver'} onClick={() => setActiveTab('solver')}>
                                     <span className="flex items-center gap-2">
                                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                                         </svg>
                                         Problem Solver
                                     </span>
@@ -1722,11 +898,8 @@ Technologies used:
                                 <TabButton active={activeTab === 'quiz'} onClick={() => setActiveTab('quiz')}>
                                     <span className="flex items-center gap-2">
                                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                            <polyline points="14 2 14 8 20 8"/>
-                                            <line x1="16" y1="13" x2="8" y2="13"/>
-                                            <line x1="16" y1="17" x2="8" y2="17"/>
-                                            <polyline points="10 9 9 9 8 9"/>
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                                            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
                                         </svg>
                                         Practice Quiz
                                     </span>
@@ -1734,31 +907,19 @@ Technologies used:
                             </div>
                         </div>
                     </header>
-                    
-                    {/* Main Content */}
                     <main className="max-w-4xl mx-auto px-4 py-8">
-                        {activeTab === 'solver' 
-                            ? <ProblemSolver showToast={showToast} /> 
-                            : <QuizMode showToast={showToast} />
-                        }
+                        {activeTab === 'solver' ? <ProblemSolver /> : <QuizMode />}
                     </main>
-                    
-                    {/* Footer */}
                     <footer className="bg-chalk text-white py-6 px-4 mt-12">
                         <div className="max-w-4xl mx-auto text-center">
-                            <p className="text-gray-400 text-sm">
-                                CSCI 250 Final Project | AI Math Tutor | Aric Hurkman
-                            </p>
-                            <p className="text-gray-500 text-xs mt-2">
-                                Powered by Google Gemini AI (Free Tier) • Enhanced with KaTeX Math Rendering
-                            </p>
+                            <p className="text-gray-400 text-sm">CSCI 250 Final Project | AI Math Tutor | Aric Hurkman</p>
+                            <p className="text-gray-500 text-xs mt-2">Powered by Google Gemini AI | Using your personal API key</p>
                         </div>
                     </footer>
                 </div>
             );
         };
         
-        // Mount the application
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>

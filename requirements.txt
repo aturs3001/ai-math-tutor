@@ -24,4 +24,9 @@ flask-cors>=4.0.0
 
 # Google Generative AI - Official Python SDK for Gemini API (FREE!)
 # Used to send requests to Gemini for solving math problems and generating quizzes
+# Each user provides their own API key
 google-generativeai>=0.3.0
+
+# Python-dotenv - Load environment variables from .env file
+# Used to load Google Client ID and other configuration
+python-dotenv>=1.0.0

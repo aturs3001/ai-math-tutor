@@ -9,14 +9,16 @@
 
 ## 📐 Project Overview
 
-The AI Math Tutor is a web-based application that helps students learn mathematics through AI-powered step-by-step solutions and interactive quizzes. The application uses the Google Gemini API (FREE tier) to provide intelligent tutoring assistance.
+The AI Math Tutor is a web-based application that helps students learn mathematics through AI-powered step-by-step solutions and interactive quizzes. The application uses the Google Gemini API (FREE tier) with user-provided API keys for secure, personalized tutoring.
 
 ### Features
 
-1. **Problem Solver**: Input any math problem and receive detailed, step-by-step solutions with explanations
-2. **Practice Quizzes**: Generate AI-powered practice problems with immediate feedback
-3. **Multiple Topics**: Support for algebra, geometry, calculus, trigonometry, statistics, and linear algebra
-4. **Adaptive Difficulty**: Choose between easy, medium, hard, or mixed difficulty levels
+1. **User Authentication**: Simple email login or Google Sign-In support
+2. **Personal API Keys**: Each user provides their own Gemini API key (stored locally)
+3. **Problem Solver**: Input any math problem and receive detailed, step-by-step solutions
+4. **Practice Quizzes**: Generate AI-powered practice problems with immediate feedback
+5. **Multiple Topics**: Support for algebra, geometry, calculus, trigonometry, statistics, and linear algebra
+6. **Adaptive Difficulty**: Choose between easy, medium, hard, or mixed difficulty levels
 
 ---
 
@@ -34,8 +36,8 @@ The AI Math Tutor is a web-based application that helps students learn mathemati
 - **HTML5/CSS3**: Structure and styling
 - **React 18**: UI framework (loaded via CDN)
 - **Tailwind CSS**: Utility-first styling
+- **Google Identity Services**: OAuth 2.0 authentication (optional)
 - **Lucide Icons**: Icon library
-- **KaTeX**: Mathematical notation rendering
 
 ---
 
@@ -59,6 +61,8 @@ Ensure you have all project files in a directory:
 ├── server.py           # Backend Flask server
 ├── index.html          # Frontend React application
 ├── requirements.txt    # Python dependencies
+├── .env                # Environment configuration (Google Client ID)
+├── .gitignore          # Git ignore rules
 └── README.md           # This file
 ```
 
@@ -70,32 +74,7 @@ Open a terminal/command prompt in the project directory and run:
 pip install -r requirements.txt
 ```
 
-### Step 3: Set Your Gemini API Key
-
-1. Get a FREE API key from: <https://aistudio.google.com/apikey>
-2. Set the environment variable:
-
-**Windows PowerShell:**
-
-```powershell
-$env:GEMINI_API_KEY='your-api-key-here'
-```
-
-**Mac/Linux:**
-
-```bash
-export GEMINI_API_KEY='your-api-key-here'
-```
-
-**Alternative (Optional):** Create a `.env` file in the project directory:
-
-```env
-GEMINI_API_KEY=your-api-key-here
-```
-
-Then install python-dotenv: `pip install python-dotenv`
-
-### Step 4: Start the Server
+### Step 3: Start the Server
 
 In the terminal, run:
 
@@ -105,31 +84,59 @@ python server.py
 
 You should see output like:
 
-```text
-============================================================
+```============================================================
 AI Math Tutor - Backend Server
 ============================================================
-
-  Powered by Google Gemini (FREE tier)
 
   Open your browser and go to:
 
      http://localhost:5000
 
-  ✓  Gemini API Key loaded from environment
+  Features:
+     ✓  Google Sign-In authentication
+     ✓  User-provided Gemini API keys
+     ✓  Step-by-step math solutions
+     ✓  Interactive practice quizzes
 
 ============================================================
 ```
 
-### Step 5: Open the Application
+### Step 4: Open the Application
 
 Open your web browser and go to:
 
-```text
-http://localhost:5000
+```http://localhost:5000
 ```
 
-That's it! The server serves both the backend API and the frontend from the same URL.
+### Step 5: Sign In and Enter API Key
+
+1. Enter your name and email (or use Google Sign-In if configured)
+2. Get a FREE Gemini API key at: <https://aistudio.google.com/apikey>
+3. Enter your API key when prompted
+4. Start learning!
+
+---
+
+## 🔐 Authentication Options
+
+### Option 1: Simple Email Login (Always Available)
+
+The application always allows users to sign in with their name and email. No external configuration required.
+
+### Option 2: Google Sign-In (Pre-configured)
+
+Google OAuth Sign-In is already configured in the `.env` file. Users can click "Sign in with Google" or use the email form.
+
+To use a different Google Client ID:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create OAuth credentials for a Web application
+3. Add `http://localhost:5000` to **Authorized JavaScript origins**
+4. Update the `GOOGLE_CLIENT_ID` in `.env`
+
+To disable Google Sign-In:
+
+- Remove or comment out the `GOOGLE_CLIENT_ID` line in `.env`
 
 ---
 
@@ -160,18 +167,25 @@ That's it! The server serves both the backend API and the frontend from the same
 
 The backend provides the following REST API endpoints:
 
-### Health Check
+### Health
 
-```http
-GET /api/health
+```GET /api/health
 ```
 
 Returns server status.
 
+### Verify API Key
+
+```POST /api/verify-key
+Headers: X-API-Key: your-gemini-api-key
+```
+
+Validates a Gemini API key.
+
 ### Solve Problem
 
-```http
-POST /api/solve
+```POST /api/solve
+Headers: X-API-Key: your-gemini-api-key
 Content-Type: application/json
 
 {
@@ -183,8 +197,8 @@ Returns step-by-step solution.
 
 ### Generate Quiz
 
-```http
-POST /api/quiz/generate
+```POST /api/quiz/generate
+Headers: X-API-Key: your-gemini-api-key
 Content-Type: application/json
 
 {
@@ -198,8 +212,8 @@ Returns generated quiz questions.
 
 ### Evaluate Answer
 
-```http
-POST /api/quiz/evaluate
+```POST /api/quiz/evaluate
+Headers: X-API-Key: your-gemini-api-key
 Content-Type: application/json
 
 {
@@ -213,62 +227,10 @@ Returns evaluation feedback.
 
 ---
 
-## 🌐 Cloud Deployment
-
-To deploy this application to the cloud:
-
-### Using Heroku
-
-1. Create a `Procfile`: ```text
-web: gunicorn server:app```
-
-2. Add `gunicorn` to requirements.txt
-
-3. Deploy:
-
-```bash
-heroku create
-heroku config:set GEMINI_API_KEY='your-api-key'
-git push heroku main
-```
-
-### Using AWS/GCP/Azure
-
-1. Set up a virtual machine or container service
-2. Install dependencies
-3. Set environment variables
-4. Use nginx as a reverse proxy (recommended)
-5. Use gunicorn as the WSGI server
-
----
-
-## 📁 Project Structure
-
-```text
-ai-math-tutor/
-│
-├── server.py              # Flask backend server
-│   ├── API endpoints      # /api/solve, /api/quiz/generate, /api/quiz/evaluate
-│   ├── System prompts     # Instructions for Gemini AI
-│   └── Error handling     # Comprehensive error responses
-│
-├── index.html             # Frontend React application
-│   ├── React components   # App, ProblemSolver, QuizMode
-│   ├── API services       # Functions to call backend
-│   ├── UI components      # LoadingSpinner, ErrorAlert, TabButton
-│   └── Styling            # Tailwind CSS + custom styles
-│
-├── requirements.txt       # Python dependencies
-│
-└── README.md             # Documentation (this file)
-```
-
----
-
 ## 🔒 Security Notes
 
-- **Never commit your API key** to version control
-- The API key should always be set via environment variables
+- **API keys are stored locally** in the browser's localStorage
+- API keys are **never sent to our servers** - they go directly to Google's Gemini API
 - For production, use HTTPS and proper authentication
 - Consider rate limiting for public deployments
 
@@ -276,18 +238,16 @@ ai-math-tutor/
 
 ## 🐛 Troubleshooting
 
-### "GEMINI_API_KEY environment variable is not set" error
+### "Failed to verify API key" error
 
-- Make sure you've set the environment variable before running the server
-- **Windows PowerShell:** `$env:GEMINI_API_KEY='your-key-here'`
-- **Mac/Linux:** `export GEMINI_API_KEY='your-key-here'`
-- Verify the key is correct (no extra spaces)
+- Make sure your Gemini API key is correct
 - Get a free key at: <https://aistudio.google.com/apikey>
+- Check that the key has no extra spaces
 
-### "Failed to fetch" or CORS errors
+### "Failed to fetch" or network errors
 
 - Make sure the backend server is running on port 5000
-- Check that both frontend and backend are running
+- Check your internet connection
 
 ### "API Error: 429"
 
@@ -301,12 +261,39 @@ ai-math-tutor/
 
 ---
 
+## 📁 Project Structure
+
+```ai-math-tutor/
+│
+├── server.py              # Flask backend server
+│   ├── API endpoints      # /api/solve, /api/quiz/generate, /api/quiz/evaluate, /api/config
+│   ├── System prompts     # Instructions for Gemini AI
+│   └── Error handling     # Comprehensive error responses
+│
+├── index.html             # Frontend React application
+│   ├── Login screen       # Email or Google Sign-In
+│   ├── Problem Solver     # Math problem input and solutions
+│   ├── Quiz Mode          # Interactive practice quizzes
+│   └── Styling            # Tailwind CSS + custom styles
+│
+├── .env                   # Environment configuration
+│   └── GOOGLE_CLIENT_ID   # Google OAuth Client ID
+│
+├── requirements.txt       # Python dependencies
+├── .gitignore            # Git ignore rules
+│
+└── README.md             # Documentation (this file)
+```
+
+---
+
 ## 📚 References
 
 - [Flask Documentation](https://flask.palletsprojects.com/)
 - [Google Gemini API Documentation](https://ai.google.dev/docs)
 - [React Documentation](https://react.dev/)
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [Google Identity Services](https://developers.google.com/identity)
 
 ---
 
@@ -319,5 +306,5 @@ This project was created for educational purposes as part of CSCI 250 coursework
 ## 🙏 Acknowledgments
 
 - Professor Gheni Abla for project guidance
-- Google for the Gemini API
+- Google for the Gemini API (free tier)
 - The React and Flask communities for excellent documentation
