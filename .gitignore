@@ -10,7 +10,7 @@ ENV/
 build/
 dist/
 *.egg-info/
-.github/
+
 
 # Environment variables
 .env
@@ -29,3 +29,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+#Github
+/.github
+#Github Copilot
+.copilot/
