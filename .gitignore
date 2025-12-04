@@ -29,8 +29,3 @@ Thumbs.db
 
 # Logs
 *.log
-
-#Github
-/.github
-#Github Copilot
-.copilot/
