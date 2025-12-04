@@ -264,10 +264,21 @@ Design Philosophy:
                 const credential = response.credential;
                 const payload = JSON.parse(atob(credential.split('.')[1]));
                 const userData = { id: payload.sub, email: payload.email, name: payload.name, picture: payload.picture, authType: 'google' };
-                setUser(userData);
-                setStep('apikey');
+                
+                // Store user data
                 localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-            }, []);
+                
+                // Check if we already have a stored API key
+                const storedApiKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
+                if (storedApiKey) {
+                    // Auto-login with existing API key
+                    onLogin(userData, storedApiKey);
+                } else {
+                    // Need to enter API key
+                    setUser(userData);
+                    setStep('apikey');
+                }
+            }, [onLogin]);
             
             useEffect(() => {
                 const initializeLogin = async () => {
@@ -286,6 +297,10 @@ Design Philosophy:
                     }
                     if (storedUser) { 
                         setUser(JSON.parse(storedUser)); 
+                        // If we have a stored API key but no user, pre-fill it
+                        if (storedApiKey) {
+                            setApiKey(storedApiKey);
+                        }
                         setStep('apikey'); 
                     }
                     
@@ -320,10 +335,21 @@ Design Philosophy:
                     picture: null,
                     authType: 'email'
                 };
-                setUser(userData);
-                setStep('apikey');
+                
+                // Store user data
                 localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
                 setError(null);
+                
+                // Check if we already have a stored API key
+                const storedApiKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
+                if (storedApiKey) {
+                    // Auto-login with existing API key
+                    onLogin(userData, storedApiKey);
+                } else {
+                    // Need to enter API key
+                    setUser(userData);
+                    setStep('apikey');
+                }
             };
             
             const handleApiKeySubmit = async () => {
@@ -416,7 +442,7 @@ Design Philosophy:
                                 {user && (
                                     <div className="flex items-center gap-3 p-3 bg-tutor-50 rounded-xl">
                                         {user.picture ? (
-                                            <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full"/>
+                                            <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full" referrerPolicy="no-referrer"/>
                                         ) : (
                                             <div className="w-10 h-10 bg-tutor-200 rounded-full flex items-center justify-center">
                                                 <span className="text-tutor-700 font-display font-bold">{user.name?.[0] || 'G'}</span>
@@ -857,8 +883,11 @@ Design Philosophy:
             const handleLogin = (userData, apiKey) => { setUser(userData); setIsLoggedIn(true); };
             
             const handleLogout = () => {
+                // Only remove user data, keep API key for convenience
+                // (API key is user's own key, not tied to their Google account)
                 localStorage.removeItem(STORAGE_KEYS.USER);
-                localStorage.removeItem(STORAGE_KEYS.API_KEY);
+                // Uncomment the line below if you want to also clear API key on logout:
+                // localStorage.removeItem(STORAGE_KEYS.API_KEY);
                 setUser(null); setIsLoggedIn(false);
             };
             
@@ -870,7 +899,7 @@ Design Philosophy:
                         <div className="max-w-4xl mx-auto">
                             <div className="flex justify-end mb-4">
                                 <div className="flex items-center gap-3">
-                                    {user?.picture ? <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full"/> : (
+                                    {user?.picture ? <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" referrerPolicy="no-referrer"/> : (
                                         <div className="w-8 h-8 bg-tutor-400 rounded-full flex items-center justify-center">
                                             <span className="text-white font-display font-bold text-sm">{user?.name?.[0] || 'G'}</span>
                                         </div>
