@@ -68,12 +68,26 @@ Open a terminal/command prompt in the project directory and run:
 pip install -r requirements.txt
 ```
 
-### Step 3: Add Your Gemini API Key
+### Step 3: Set Your Gemini API Key
 
 1. Get a FREE API key from: https://aistudio.google.com/apikey
-2. Open `server.py` in a text editor
-3. Find the line: `GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"`
-4. Replace `YOUR_GEMINI_API_KEY_HERE` with your actual API key
+2. Set the environment variable:
+
+**Windows PowerShell:**
+```powershell
+$env:GEMINI_API_KEY='your-api-key-here'
+```
+
+**Mac/Linux:**
+```bash
+export GEMINI_API_KEY='your-api-key-here'
+```
+
+**Alternative (Optional):** Create a `.env` file in the project directory:
+```
+GEMINI_API_KEY=your-api-key-here
+```
+Then install python-dotenv: `pip install python-dotenv`
 
 ### Step 4: Start the Server
 
@@ -93,7 +107,7 @@ AI Math Tutor - Backend Server
 
      http://localhost:5000
 
-  Make sure ANTHROPIC_API_KEY environment variable is set!
+  ✓  Gemini API Key loaded from environment
 
 ============================================================
 ```
@@ -246,8 +260,10 @@ ai-math-tutor/
 
 ## 🐛 Troubleshooting
 
-### "API Key Error" message
-- Make sure you've added your Gemini API key to server.py
+### "GEMINI_API_KEY environment variable is not set" error
+- Make sure you've set the environment variable before running the server
+- **Windows PowerShell:** `$env:GEMINI_API_KEY='your-key-here'`
+- **Mac/Linux:** `export GEMINI_API_KEY='your-key-here'`
 - Verify the key is correct (no extra spaces)
 - Get a free key at: https://aistudio.google.com/apikey
 

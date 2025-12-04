@@ -61,9 +61,17 @@ CORS(app)
 # =============================================================================
 
 # Google Gemini API Key (FREE tier - 60 requests per minute!)
-# Active Free Teir API Key Is Applied Below
 # Get your free key at: https://aistudio.google.com/apikey
-GEMINI_API_KEY = "AIzaSyBEZslZ-I4PDOnHPULnyKo_GEHE_ocVp40"
+# Set via environment variable: GEMINI_API_KEY
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+if not GEMINI_API_KEY:
+    raise ValueError(
+        "GEMINI_API_KEY environment variable is not set.\n"
+        "Get a free key at: https://aistudio.google.com/apikey\n"
+        "Set it using: export GEMINI_API_KEY='your-key-here' (Mac/Linux)\n"
+        "Or: $env:GEMINI_API_KEY='your-key-here' (Windows PowerShell)"
+    )
 
 # Configure the Gemini API with our key
 genai.configure(api_key=GEMINI_API_KEY)
@@ -490,11 +498,8 @@ if __name__ == '__main__':
     print()
     print("     http://localhost:5000")
     print()
-    if GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
-        print("  ⚠️  WARNING: You need to set your Gemini API key!")
-        print("     Edit server.py and replace YOUR_GEMINI_API_KEY_HERE")
-        print("     Get a free key at: https://aistudio.google.com/apikey")
-        print()
+    print("  ✓  Gemini API Key loaded from environment")
+    print()
     print("=" * 60)
     
     # Run the Flask development server
