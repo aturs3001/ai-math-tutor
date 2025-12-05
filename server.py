@@ -15,6 +15,7 @@ Features:
 - User-provided Gemini API keys (each user uses their own key)
 - Problem solving with step-by-step explanations
 - Quiz generation and answer evaluation
+- STUDY MODE: Interactive step-by-step learning with hints
 - FILE UPLOAD SUPPORT: Images (.png, .jpg, .jpeg, .gif, .webp), PDFs, and DOCX files
 
 Requirements:
@@ -223,6 +224,90 @@ You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exac
 
 Always be encouraging and constructive, even when the answer is incorrect.
 Consider equivalent forms of answers (e.g., 0.5 = 1/2 = 50%)."""
+
+# =============================================================================
+# STUDY MODE SYSTEM PROMPTS
+# =============================================================================
+
+# System prompt for starting a study session - breaks problem into guided steps
+STUDY_START_PROMPT = """You are an expert math tutor helping a student learn by guiding them through a problem step-by-step.
+Your role is NOT to solve the problem for them, but to break it down into manageable steps they can work through.
+
+For the given problem:
+1. Identify the type of problem and key concepts needed
+2. Break down the solution into 3-6 clear steps the student needs to complete
+3. For each step, provide a description of what needs to be done (but NOT the answer)
+4. Include what mathematical operation or concept is required
+
+You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
+{
+    "problem": "The original problem restated clearly",
+    "problem_type": "The category of math problem",
+    "concepts_needed": ["List of mathematical concepts the student should know"],
+    "total_steps": 4,
+    "steps": [
+        {
+            "step_number": 1,
+            "objective": "What the student needs to accomplish in this step",
+            "instruction": "Clear instruction on what to do (without giving the answer)",
+            "skill_required": "The mathematical skill needed (e.g., 'addition', 'factoring', 'differentiation')",
+            "expected_format": "What form the answer should be in (e.g., 'a number', 'an equation', 'simplified expression')"
+        }
+    ],
+    "encouragement": "A brief encouraging message to start the student off"
+}
+
+Be encouraging and supportive. Guide them to discover the answer themselves!"""
+
+# System prompt for providing hints during study mode
+STUDY_HINT_PROMPT = """You are a supportive math tutor providing a hint to help a student who is stuck.
+
+The student is working on a specific step of a math problem and needs guidance.
+Provide a helpful hint that guides them toward the answer WITHOUT giving it away directly.
+
+Rules for good hints:
+1. Start with the most gentle hint (a reminder of the concept)
+2. If they need more help, provide a more specific hint
+3. Never directly state the answer
+4. Be encouraging and supportive
+5. Relate the hint to concepts they should know
+
+Based on the hint level requested (1 = gentle, 2 = moderate, 3 = strong):
+- Level 1: Remind them of the relevant concept or formula
+- Level 2: Give a more specific direction or partial setup
+- Level 3: Walk them most of the way there, leaving only the final calculation
+
+You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
+{
+    "hint": "The helpful hint text",
+    "hint_level": 1,
+    "concept_reminder": "A brief reminder of the relevant concept or formula",
+    "encouragement": "An encouraging message",
+    "next_hint_available": true
+}"""
+
+# System prompt for checking a student's step answer in study mode
+STUDY_CHECK_PROMPT = """You are a supportive math tutor checking a student's work on a specific step of a problem.
+
+Evaluate if their answer for this step is correct or on the right track.
+Be encouraging even if they made a mistake - focus on helping them learn.
+
+Consider:
+1. Is the answer mathematically correct for this step?
+2. Is it in an acceptable form (equivalent forms should be accepted)?
+3. If wrong, what might have caused the error?
+
+You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
+{
+    "is_correct": true or false,
+    "feedback": "Specific feedback about their answer",
+    "correct_answer": "The correct answer for this step (only if they got it wrong)",
+    "error_type": "Type of error if applicable (e.g., 'calculation error', 'wrong operation', 'sign error')",
+    "encouragement": "An encouraging message regardless of correctness",
+    "tip": "A helpful tip for similar problems in the future"
+}
+
+Always be positive and constructive!"""
 
 
 # =============================================================================
@@ -468,10 +553,8 @@ def call_gemini(prompt, system_prompt, api_key):
         print(f"Raw response (first 500 chars): {response_text[:500]}")
         
         # Try to extract useful information from the response
-        # Look for common patterns in the response
         final_answer = ""
         if "answer" in response_text.lower():
-            # Try to extract an answer
             lines = response_text.split('\n')
             for line in lines:
                 if "answer" in line.lower() and ('=' in line or ':' in line):
@@ -551,11 +634,9 @@ def call_gemini_with_image(images, prompt, system_prompt, api_key):
         try:
             return json.loads(cleaned_text)
         except json.JSONDecodeError as e:
-            # If JSON parsing fails, try to construct a response from the text
             print(f"JSON parse error: {e}")
             print(f"Raw response: {response_text[:500]}...")
             
-            # Return a structured response with the raw text
             return {
                 "problem_detected": "Problem analyzed from uploaded file",
                 "problem_type": "Mathematical Problem",
@@ -629,7 +710,6 @@ def validate_solution_response(solution, source_description="uploaded file"):
     
     # Ensure steps is a non-empty list with proper structure
     if not has_valid_steps:
-        # Check if there's a final_answer we can use
         if solution.get('final_answer') and is_valid_answer(solution.get('final_answer')):
             solution['steps'] = [
                 {
@@ -662,13 +742,11 @@ def validate_solution_response(solution, source_description="uploaded file"):
                 step['step_number'] = step.get('step_number', i + 1)
                 step['action'] = step.get('action', 'Step')
                 step['explanation'] = step.get('explanation', '')
-                # Clean up N/A in results
                 result = step.get('result', '')
                 step['result'] = result if is_valid_answer(result) else ''
     
     # Ensure final_answer exists and is valid
     if not is_valid_answer(solution.get('final_answer')):
-        # Try to get it from the last step
         if solution['steps'] and is_valid_answer(solution['steps'][-1].get('result')):
             solution['final_answer'] = solution['steps'][-1]['result']
         else:
@@ -714,6 +792,7 @@ def health_check():
         "auth": "Google Sign-In with user-provided API keys",
         "features": {
             "file_upload": True,
+            "study_mode": True,
             "supported_formats": list(ALLOWED_IMAGE_EXTENSIONS) + list(ALLOWED_DOCUMENT_EXTENSIONS),
             "pymupdf_available": PYMUPDF_AVAILABLE,
             "pdf2image_available": PDF2IMAGE_AVAILABLE,
@@ -768,7 +847,6 @@ def verify_api_key():
         # Make a simple test request
         response = model.generate_content("Reply with just the word 'OK'")
         
-        # If we get here, the key is valid
         return jsonify({
             "valid": True,
             "message": "API key is valid!"
@@ -865,9 +943,6 @@ def solve_from_file():
     """
     Solve a math problem from an uploaded file (image, PDF, or DOCX).
     
-    This endpoint accepts file uploads containing math problems and uses
-    Gemini's vision capabilities to analyze and solve them.
-    
     Request Headers:
         X-API-Key: The user's Gemini API key
     
@@ -875,28 +950,10 @@ def solve_from_file():
         file: The uploaded file (image, PDF, or DOCX)
         additional_context: Optional additional context or question about the problem
     
-    Supported File Types:
-        - Images: .png, .jpg, .jpeg, .gif, .webp, .bmp
-        - Documents: .pdf, .docx
-    
     Returns:
-        JSON response containing:
-        - problem_detected: Description of the problem found
-        - problem_type: Category of the math problem
-        - concepts: List of mathematical concepts used
-        - steps: Array of solution steps with explanations
-        - final_answer: The final answer
-        - verification: How to verify the answer
-        
-    Error Responses:
-        400: Missing or invalid file
-        401: Missing or invalid API key
-        413: File too large
-        415: Unsupported file type
-        500: Server error
+        JSON response containing step-by-step solution
     """
     try:
-        # Get API key
         api_key = get_api_key_from_request()
         
         if not api_key:
@@ -905,38 +962,30 @@ def solve_from_file():
                 "code": "NO_API_KEY"
             }), 401
         
-        # Check if file was uploaded
         if 'file' not in request.files:
             return jsonify({
-                "error": "No file uploaded. Please upload an image, PDF, or DOCX file containing a math problem.",
+                "error": "No file uploaded.",
                 "supported_types": list(ALLOWED_IMAGE_EXTENSIONS) + list(ALLOWED_DOCUMENT_EXTENSIONS)
             }), 400
         
         file = request.files['file']
         
-        # Check if file was selected
         if file.filename == '':
             return jsonify({"error": "No file selected"}), 400
         
-        # Get additional context if provided
         additional_context = request.form.get('additional_context', '')
-        
-        # Get file extension
         file_ext = get_file_extension(file.filename)
         
-        # Validate file type
         if not allowed_file(file.filename, 'all'):
             return jsonify({
                 "error": f"Unsupported file type: .{file_ext}",
                 "supported_types": list(ALLOWED_IMAGE_EXTENSIONS) + list(ALLOWED_DOCUMENT_EXTENSIONS)
             }), 415
         
-        # Read file data
         file_data = file.read()
         
         # Process based on file type
         if file_ext in ALLOWED_IMAGE_EXTENSIONS:
-            # Process image file
             try:
                 image = process_image_file(file_data, file.filename)
                 solution = call_gemini_with_image(
@@ -947,15 +996,11 @@ def solve_from_file():
                 )
                 solution = validate_solution_response(solution, f"image: {file.filename}")
             except Exception as img_error:
-                return jsonify({
-                    "error": f"Failed to process image: {str(img_error)}"
-                }), 400
+                return jsonify({"error": f"Failed to process image: {str(img_error)}"}), 400
         
         elif file_ext == 'pdf':
-            # Process PDF file
             text_content, page_images = extract_text_from_pdf(file_data)
             
-            # Clean up the extracted text
             if text_content:
                 text_content = re.sub(r'---\s*Page\s*\d+\s*---', '\n', text_content)
                 text_content = re.sub(r'\n{3,}', '\n\n', text_content)
@@ -963,81 +1008,51 @@ def solve_from_file():
             
             solution = None
             
-            # Log what we extracted for debugging
-            print(f"PDF text extracted ({len(text_content) if text_content else 0} chars): {text_content[:200] if text_content else 'NONE'}...")
-            print(f"PDF images extracted: {len(page_images)}")
-            
-            # PRIORITY 1: Try text-based approach first (more reliable for math)
             if text_content and len(text_content.strip()) > 10:
                 try:
-                    print("Trying text-based PDF solving...")
                     pdf_prompt = f"{text_content}\n\n{additional_context}" if additional_context else text_content
-                    
                     solution = call_gemini(pdf_prompt, PDF_TEXT_SOLVER_PROMPT, api_key)
-                    print(f"Text-based result: {solution}")
                     
-                    # Check if we got a real answer
-                    if solution and solution.get('final_answer') and solution['final_answer'] not in ['N/A', '', 'See steps above for the solution', 'Unable to determine final answer']:
+                    if solution and solution.get('final_answer') and solution['final_answer'] not in ['N/A', '', 'See steps above for the solution']:
                         solution = validate_solution_response(solution, "PDF text analysis")
                     else:
-                        print("Text-based returned invalid answer, will try image...")
                         solution = None
-                        
-                except Exception as text_error:
-                    print(f"Text-based PDF solving failed: {text_error}")
+                except Exception:
                     solution = None
             
-            # PRIORITY 2: Try image-based if text failed or no good text
             if not solution and page_images:
                 try:
-                    print("Trying image-based PDF solving...")
                     img_prompt = "Solve the math problem shown in this image step by step."
                     if text_content:
                         img_prompt += f" The text reads: {text_content[:300]}"
                     if additional_context:
                         img_prompt += f" {additional_context}"
                     
-                    solution = call_gemini_with_image(
-                        page_images[0],  # Just use first page
-                        img_prompt,
-                        FILE_SOLVER_SYSTEM_PROMPT,
-                        api_key
-                    )
-                    print(f"Image-based result: {solution}")
+                    solution = call_gemini_with_image(page_images[0], img_prompt, FILE_SOLVER_SYSTEM_PROMPT, api_key)
                     solution = validate_solution_response(solution, "PDF image analysis")
-                except Exception as img_error:
-                    print(f"Image-based PDF solving failed: {img_error}")
+                except Exception:
+                    pass
             
-            # Final check
             if not solution:
                 return jsonify({
                     "error": "Could not solve the problem from this PDF.",
-                    "hint": "Try typing the problem manually or uploading a clearer image.",
-                    "extracted_text": text_content[:500] if text_content else "No text found"
+                    "hint": "Try typing the problem manually or uploading a clearer image."
                 }), 400
         
         elif file_ext in ['docx', 'doc']:
-            # Process DOCX file
             text_content = extract_text_from_docx(file_data)
             
             if text_content and not text_content.startswith("Error"):
-                docx_prompt = f"""Document Content:
-{text_content}
-
-{f'Additional context: {additional_context}' if additional_context else ''}"""
-                
+                docx_prompt = f"Document Content:\n{text_content}\n\n{f'Additional context: {additional_context}' if additional_context else ''}"
                 solution = call_gemini(docx_prompt, PDF_TEXT_SOLVER_PROMPT, api_key)
                 solution = validate_solution_response(solution, f"Word document: {file.filename}")
             else:
                 return jsonify({
-                    "error": text_content if text_content else "Could not extract content from DOCX file.",
-                    "hint": "Try copying the problem text and using the text input instead."
+                    "error": text_content if text_content else "Could not extract content from DOCX file."
                 }), 400
-        
         else:
             return jsonify({"error": "Unsupported file type"}), 415
         
-        # Add file info to response
         solution['source_file'] = {
             'filename': file.filename,
             'type': file_ext,
@@ -1046,25 +1061,103 @@ def solve_from_file():
         
         return jsonify(solution)
         
+    except ValueError as ve:
+        return jsonify({"error": str(ve), "code": "API_KEY_ERROR"}), 401
+        
+    except Exception as e:
+        error_message = str(e)
+        if "API_KEY" in error_message.upper() or "invalid" in error_message.lower():
+            return jsonify({
+                "error": "Invalid API key. Please check your Gemini API key.",
+                "code": "INVALID_API_KEY"
+            }), 401
+        return jsonify({"error": f"Server Error: {error_message}"}), 500
+
+
+# =============================================================================
+# STUDY MODE API ROUTES
+# =============================================================================
+
+@app.route('/api/study/start', methods=['POST'])
+def start_study_session():
+    """
+    Start a new study session for a math problem.
+    
+    This endpoint analyzes a problem and breaks it down into guided steps
+    that the student will work through interactively.
+    
+    Request Headers:
+        X-API-Key: The user's Gemini API key
+    
+    Request Body (JSON):
+        {
+            "problem": "The math problem to study"
+        }
+    
+    Returns:
+        JSON response containing:
+        - problem: The original problem
+        - problem_type: Category of the math problem
+        - concepts_needed: List of concepts the student should know
+        - total_steps: Number of steps to complete
+        - steps: Array of step objects with objectives and instructions
+        - encouragement: Encouraging message to start
+    """
+    try:
+        api_key = get_api_key_from_request()
+        
+        if not api_key:
+            return jsonify({
+                "error": "API key is required. Please sign in and provide your Gemini API key.",
+                "code": "NO_API_KEY"
+            }), 401
+        
+        data = request.get_json()
+        
+        if not data or 'problem' not in data:
+            return jsonify({
+                "error": "Missing 'problem' in request body",
+                "example": {"problem": "Solve for x: 2x + 5 = 13"}
+            }), 400
+        
+        problem = data['problem']
+        
+        if not problem.strip():
+            return jsonify({"error": "Problem cannot be empty"}), 400
+        
+        # Call Gemini to break down the problem into study steps
+        study_plan = call_gemini(
+            f"Please analyze this math problem and create a guided study plan:\n\n{problem}",
+            STUDY_START_PROMPT,
+            api_key
+        )
+        
+        # Validate the response has required fields
+        if not study_plan.get('steps'):
+            study_plan['steps'] = [{
+                "step_number": 1,
+                "objective": "Solve the problem",
+                "instruction": "Work through the problem step by step",
+                "skill_required": "Mathematical reasoning",
+                "expected_format": "The final answer"
+            }]
+        
+        if not study_plan.get('total_steps'):
+            study_plan['total_steps'] = len(study_plan['steps'])
+        
+        if not study_plan.get('problem'):
+            study_plan['problem'] = problem
+        
+        if not study_plan.get('encouragement'):
+            study_plan['encouragement'] = "Let's work through this problem together! Take your time with each step."
+        
+        return jsonify(study_plan)
+        
     except json.JSONDecodeError as je:
-        # Return a helpful response instead of an error for file uploads
-        print(f"JSON decode error in solve_from_file: {je}")
         return jsonify({
-            "problem_detected": "Problem analyzed from file (response format issue)",
-            "problem_type": "File Analysis",
-            "concepts": [],
-            "steps": [
-                {
-                    "step_number": 1,
-                    "action": "Analysis Issue",
-                    "explanation": "The AI analyzed your file but returned a response in an unexpected format. This can happen with complex PDFs or low-quality images.",
-                    "result": "Please try again or use a clearer image"
-                }
-            ],
-            "final_answer": "Unable to parse the solution. Please try uploading a clearer image or typing the problem manually.",
-            "verification": "Try using the text input mode for best results",
-            "source_file": {"filename": "uploaded file", "type": "unknown", "size_bytes": 0}
-        })
+            "error": "Failed to parse AI response. Please try again.",
+            "details": str(je)
+        }), 500
         
     except ValueError as ve:
         return jsonify({
@@ -1081,15 +1174,271 @@ def solve_from_file():
                 "code": "INVALID_API_KEY",
                 "help": "Get a free key at: https://aistudio.google.com/apikey"
             }), 401
-        
-        if "too large" in error_message.lower() or "size" in error_message.lower():
-            return jsonify({
-                "error": "File too large. Maximum file size is 16 MB.",
-                "code": "FILE_TOO_LARGE"
-            }), 413
             
         return jsonify({"error": f"Server Error: {error_message}"}), 500
 
+
+@app.route('/api/study/hint', methods=['POST'])
+def get_study_hint():
+    """
+    Get a hint for a specific step in study mode.
+    
+    Request Headers:
+        X-API-Key: The user's Gemini API key
+    
+    Request Body (JSON):
+        {
+            "problem": "The original math problem",
+            "step_number": 1,
+            "step_objective": "What the student needs to do",
+            "hint_level": 1 (1=gentle, 2=moderate, 3=strong),
+            "student_attempt": "What the student has tried so far (optional)"
+        }
+    
+    Returns:
+        JSON response containing:
+        - hint: The hint text
+        - hint_level: The level of hint provided
+        - concept_reminder: A reminder of the relevant concept
+        - encouragement: An encouraging message
+        - next_hint_available: Whether a stronger hint is available
+    """
+    try:
+        api_key = get_api_key_from_request()
+        
+        if not api_key:
+            return jsonify({
+                "error": "API key is required.",
+                "code": "NO_API_KEY"
+            }), 401
+        
+        data = request.get_json()
+        
+        required_fields = ['problem', 'step_number', 'step_objective']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    "error": f"Missing '{field}' in request body",
+                    "required_fields": required_fields
+                }), 400
+        
+        problem = data['problem']
+        step_number = data['step_number']
+        step_objective = data['step_objective']
+        hint_level = data.get('hint_level', 1)
+        student_attempt = data.get('student_attempt', '')
+        
+        # Build the hint request prompt
+        hint_prompt = f"""Problem: {problem}
+
+Current Step: Step {step_number}
+Step Objective: {step_objective}
+
+Hint Level Requested: {hint_level} (1=gentle reminder, 2=more specific guidance, 3=strong hint)
+
+{"Student's attempt so far: " + student_attempt if student_attempt else "Student hasn't attempted yet."}
+
+Please provide an appropriate hint for this level."""
+        
+        hint_response = call_gemini(hint_prompt, STUDY_HINT_PROMPT, api_key)
+        
+        # Validate response
+        if not hint_response.get('hint'):
+            hint_response['hint'] = "Think about what mathematical operation would help you here."
+        
+        hint_response['hint_level'] = hint_level
+        hint_response['next_hint_available'] = hint_level < 3
+        
+        if not hint_response.get('encouragement'):
+            hint_response['encouragement'] = "You're doing great! Keep thinking through it."
+        
+        return jsonify(hint_response)
+        
+    except Exception as e:
+        error_message = str(e)
+        
+        if "API_KEY" in error_message.upper() or "invalid" in error_message.lower():
+            return jsonify({
+                "error": "Invalid API key.",
+                "code": "INVALID_API_KEY"
+            }), 401
+            
+        return jsonify({"error": f"Server Error: {error_message}"}), 500
+
+
+@app.route('/api/study/check', methods=['POST'])
+def check_study_step():
+    """
+    Check a student's answer for a specific step in study mode.
+    
+    Request Headers:
+        X-API-Key: The user's Gemini API key
+    
+    Request Body (JSON):
+        {
+            "problem": "The original math problem",
+            "step_number": 1,
+            "step_objective": "What the student needed to do",
+            "student_answer": "The student's answer for this step",
+            "expected_format": "What form the answer should be in"
+        }
+    
+    Returns:
+        JSON response containing:
+        - is_correct: Boolean indicating if the answer is correct
+        - feedback: Specific feedback about the answer
+        - correct_answer: The correct answer (only if wrong)
+        - error_type: Type of error if applicable
+        - encouragement: An encouraging message
+        - tip: A helpful tip for the future
+    """
+    try:
+        api_key = get_api_key_from_request()
+        
+        if not api_key:
+            return jsonify({
+                "error": "API key is required.",
+                "code": "NO_API_KEY"
+            }), 401
+        
+        data = request.get_json()
+        
+        required_fields = ['problem', 'step_number', 'step_objective', 'student_answer']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    "error": f"Missing '{field}' in request body",
+                    "required_fields": required_fields
+                }), 400
+        
+        problem = data['problem']
+        step_number = data['step_number']
+        step_objective = data['step_objective']
+        student_answer = data['student_answer']
+        expected_format = data.get('expected_format', 'an answer')
+        
+        # Build the check prompt
+        check_prompt = f"""Original Problem: {problem}
+
+Step Being Checked: Step {step_number}
+Step Objective: {step_objective}
+Expected Answer Format: {expected_format}
+
+Student's Answer: {student_answer}
+
+Please evaluate if the student's answer is correct for this step. Consider equivalent forms."""
+        
+        check_response = call_gemini(check_prompt, STUDY_CHECK_PROMPT, api_key)
+        
+        # Validate response
+        if 'is_correct' not in check_response:
+            check_response['is_correct'] = False
+        
+        if not check_response.get('feedback'):
+            check_response['feedback'] = "Let me check your work..."
+        
+        if not check_response.get('encouragement'):
+            if check_response['is_correct']:
+                check_response['encouragement'] = "Excellent work! You got it right!"
+            else:
+                check_response['encouragement'] = "Good effort! Let's look at what happened."
+        
+        return jsonify(check_response)
+        
+    except Exception as e:
+        error_message = str(e)
+        
+        if "API_KEY" in error_message.upper() or "invalid" in error_message.lower():
+            return jsonify({
+                "error": "Invalid API key.",
+                "code": "INVALID_API_KEY"
+            }), 401
+            
+        return jsonify({"error": f"Server Error: {error_message}"}), 500
+
+
+@app.route('/api/study/solution', methods=['POST'])
+def get_step_solution():
+    """
+    Get the full solution for a specific step (when student gives up or wants to see answer).
+    
+    Request Headers:
+        X-API-Key: The user's Gemini API key
+    
+    Request Body (JSON):
+        {
+            "problem": "The original math problem",
+            "step_number": 1,
+            "step_objective": "What the student needed to do"
+        }
+    
+    Returns:
+        JSON response containing the solution for that step
+    """
+    try:
+        api_key = get_api_key_from_request()
+        
+        if not api_key:
+            return jsonify({
+                "error": "API key is required.",
+                "code": "NO_API_KEY"
+            }), 401
+        
+        data = request.get_json()
+        
+        required_fields = ['problem', 'step_number', 'step_objective']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    "error": f"Missing '{field}' in request body"
+                }), 400
+        
+        problem = data['problem']
+        step_number = data['step_number']
+        step_objective = data['step_objective']
+        
+        # Build the solution prompt
+        solution_prompt = f"""Problem: {problem}
+
+The student needs help with Step {step_number}: {step_objective}
+
+Please provide the solution for ONLY this specific step with a clear explanation.
+
+Respond with ONLY valid JSON in this format:
+{{
+    "step_solution": "The answer for this step",
+    "explanation": "Clear explanation of how to get this answer",
+    "key_concept": "The main mathematical concept used",
+    "tip": "A tip for solving similar steps in the future"
+}}"""
+        
+        system_prompt = "You are a helpful math tutor. Provide the solution for the requested step. Respond with ONLY valid JSON."
+        
+        solution = call_gemini(solution_prompt, system_prompt, api_key)
+        
+        if not solution.get('step_solution'):
+            solution['step_solution'] = "Please see the explanation."
+        
+        if not solution.get('explanation'):
+            solution['explanation'] = "Work through the problem using the objective given."
+        
+        return jsonify(solution)
+        
+    except Exception as e:
+        error_message = str(e)
+        
+        if "API_KEY" in error_message.upper() or "invalid" in error_message.lower():
+            return jsonify({
+                "error": "Invalid API key.",
+                "code": "INVALID_API_KEY"
+            }), 401
+            
+        return jsonify({"error": f"Server Error: {error_message}"}), 500
+
+
+# =============================================================================
+# QUIZ API ROUTES
+# =============================================================================
 
 @app.route('/api/quiz/generate', methods=['POST'])
 def generate_quiz():
@@ -1130,7 +1479,6 @@ def generate_quiz():
         num_questions = data.get('num_questions', 3)
         difficulty = data.get('difficulty', 'mixed')
         
-        # Validate number of questions (limit to prevent abuse)
         num_questions = min(max(1, num_questions), 10)
         
         quiz = call_gemini(
@@ -1145,10 +1493,7 @@ def generate_quiz():
         return jsonify({"error": "Failed to generate quiz. Please try again."}), 500
         
     except ValueError as ve:
-        return jsonify({
-            "error": str(ve),
-            "code": "API_KEY_ERROR"
-        }), 401
+        return jsonify({"error": str(ve), "code": "API_KEY_ERROR"}), 401
         
     except Exception as e:
         error_message = str(e)
@@ -1156,8 +1501,7 @@ def generate_quiz():
         if "API_KEY" in error_message.upper() or "invalid" in error_message.lower() or "401" in error_message:
             return jsonify({
                 "error": "Invalid API key. Please check your Gemini API key.",
-                "code": "INVALID_API_KEY",
-                "help": "Get a free key at: https://aistudio.google.com/apikey"
+                "code": "INVALID_API_KEY"
             }), 401
             
         return jsonify({"error": f"Server Error: {error_message}"}), 500
@@ -1219,7 +1563,6 @@ Please determine if the student's answer is correct (considering equivalent form
         return jsonify(evaluation)
         
     except json.JSONDecodeError:
-        # If parsing fails, do a simple string comparison
         is_correct = str(student_answer).strip().lower() == str(correct_answer).strip().lower()
         return jsonify({
             "is_correct": is_correct,
@@ -1228,10 +1571,7 @@ Please determine if the student's answer is correct (considering equivalent form
         })
         
     except ValueError as ve:
-        return jsonify({
-            "error": str(ve),
-            "code": "API_KEY_ERROR"
-        }), 401
+        return jsonify({"error": str(ve), "code": "API_KEY_ERROR"}), 401
         
     except Exception as e:
         error_message = str(e)
@@ -1239,8 +1579,7 @@ Please determine if the student's answer is correct (considering equivalent form
         if "API_KEY" in error_message.upper() or "invalid" in error_message.lower() or "401" in error_message:
             return jsonify({
                 "error": "Invalid API key. Please check your Gemini API key.",
-                "code": "INVALID_API_KEY",
-                "help": "Get a free key at: https://aistudio.google.com/apikey"
+                "code": "INVALID_API_KEY"
             }), 401
             
         return jsonify({"error": f"Server Error: {error_message}"}), 500
@@ -1253,12 +1592,6 @@ Please determine if the student's answer is correct (considering equivalent form
 if __name__ == '__main__':
     """
     Main entry point for the Flask application.
-    
-    When running this file directly (python server.py), it will:
-    1. Start the Flask development server
-    2. Enable debug mode for development
-    3. Listen on all interfaces (0.0.0.0) on port 5000
-    4. Serve both the API and the frontend
     """
     print("=" * 60)
     print("AI Math Tutor - Backend Server")
@@ -1275,6 +1608,7 @@ if __name__ == '__main__':
     print("     ✓  User-provided Gemini API keys")
     print("     ✓  Step-by-step math solutions")
     print("     ✓  Interactive practice quizzes")
+    print("     ✓  STUDY MODE - Interactive guided learning")
     print("     ✓  FILE UPLOAD SUPPORT:")
     print(f"        - Images: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}")
     print(f"        - Documents: {', '.join(ALLOWED_DOCUMENT_EXTENSIONS)}")
@@ -1286,5 +1620,4 @@ if __name__ == '__main__':
     print()
     print("=" * 60)
     
-    # Run the Flask development server
     app.run(debug=True, host='0.0.0.0', port=5000)
