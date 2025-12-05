@@ -53,6 +53,7 @@ Design Philosophy:
     <!-- KaTeX for mathematical notation rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     
     <!-- Google Identity Services for OAuth 2.0 Sign-In -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -447,6 +448,111 @@ Design Philosophy:
                     {children}
                 </button>
             );
+        };
+        
+        // =======================================================================
+        // MATH RENDERING COMPONENT (KaTeX)
+        // =======================================================================
+        /**
+         * MathText Component - Renders text with LaTeX math expressions
+         * 
+         * Supports:
+         * - Inline math: $...$  or \(...\)
+         * - Display math: $$...$$ or \[...\]
+         * 
+         * @param {string} text - Text containing LaTeX math expressions
+         * @param {string} className - Additional CSS classes
+         */
+        const MathText = ({ text, className = '' }) => {
+            const containerRef = useRef(null);
+            const [rendered, setRendered] = useState(false);
+            
+            useEffect(() => {
+                if (!containerRef.current || !text) return;
+                
+                // Check if KaTeX is loaded
+                if (typeof window.katex === 'undefined') {
+                    // KaTeX not loaded, just show plain text
+                    containerRef.current.textContent = text;
+                    return;
+                }
+                
+                // Process the text to find and render math expressions
+                let processedHtml = text;
+                
+                // First, escape HTML to prevent XSS
+                const escapeHtml = (str) => {
+                    const div = document.createElement('div');
+                    div.textContent = str;
+                    return div.innerHTML;
+                };
+                
+                // Store math expressions temporarily
+                const mathExpressions = [];
+                let mathIndex = 0;
+                
+                // Extract display math first ($$...$$)
+                processedHtml = processedHtml.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
+                    mathExpressions.push({ math: math.trim(), display: true });
+                    return `%%MATH_${mathIndex++}%%`;
+                });
+                
+                // Extract display math (\[...\])
+                processedHtml = processedHtml.replace(/\\\[([\s\S]*?)\\\]/g, (match, math) => {
+                    mathExpressions.push({ math: math.trim(), display: true });
+                    return `%%MATH_${mathIndex++}%%`;
+                });
+                
+                // Extract inline math ($...$) - be careful not to match currency
+                processedHtml = processedHtml.replace(/\$([^\$\n]+?)\$/g, (match, math) => {
+                    // Skip if it looks like currency (e.g., $5.00)
+                    if (/^\d+(\.\d{2})?$/.test(math.trim())) return match;
+                    mathExpressions.push({ math: math.trim(), display: false });
+                    return `%%MATH_${mathIndex++}%%`;
+                });
+                
+                // Extract inline math (\(...\))
+                processedHtml = processedHtml.replace(/\\\(([\s\S]*?)\\\)/g, (match, math) => {
+                    mathExpressions.push({ math: math.trim(), display: false });
+                    return `%%MATH_${mathIndex++}%%`;
+                });
+                
+                // Escape HTML in the non-math parts
+                const parts = processedHtml.split(/(%%MATH_\d+%%)/);
+                processedHtml = parts.map(part => {
+                    if (part.match(/%%MATH_\d+%%/)) return part;
+                    return escapeHtml(part);
+                }).join('');
+                
+                // Now render the math expressions
+                mathExpressions.forEach((expr, i) => {
+                    try {
+                        const renderedMath = window.katex.renderToString(expr.math, {
+                            displayMode: expr.display,
+                            throwOnError: false,
+                            errorColor: '#cc0000',
+                            strict: false,
+                            trust: true
+                        });
+                        processedHtml = processedHtml.replace(`%%MATH_${i}%%`, renderedMath);
+                    } catch (e) {
+                        // If KaTeX fails, show the original expression
+                        processedHtml = processedHtml.replace(
+                            `%%MATH_${i}%%`, 
+                            `<code class="text-red-500">${escapeHtml(expr.math)}</code>`
+                        );
+                    }
+                });
+                
+                // Convert newlines to <br> for better formatting
+                processedHtml = processedHtml.replace(/\n/g, '<br>');
+                
+                containerRef.current.innerHTML = processedHtml;
+                setRendered(true);
+            }, [text]);
+            
+            // Show plain text initially, will be replaced by KaTeX-rendered content
+            return <span ref={containerRef} className={`math-content ${className}`}>{!rendered ? text : null}</span>;
         };
         
         // =======================================================================
@@ -1080,10 +1186,12 @@ Design Philosophy:
                                                     </div>
                                                     <div className="flex-1">
                                                         <h5 className="font-display font-semibold text-chalk">{step.action}</h5>
-                                                        <p className="text-gray-600 mt-1 math-content">{step.explanation}</p>
+                                                        <div className="text-gray-600 mt-1">
+                                                            <MathText text={step.explanation} />
+                                                        </div>
                                                         {step.result && (
                                                             <div className="mt-3 p-3 bg-white rounded-lg border border-tutor-200">
-                                                                <code className="text-tutor-700 font-mono">{step.result}</code>
+                                                                <MathText text={step.result} className="text-tutor-700 font-mono" />
                                                             </div>
                                                         )}
                                                     </div>
@@ -1094,7 +1202,9 @@ Design Philosophy:
                                 </div>
                                 <div className="bg-gradient-to-r from-accent-50 to-accent-100 rounded-xl p-6 border border-accent-200">
                                     <h4 className="font-display font-semibold text-lg text-accent-900 mb-2">Final Answer</h4>
-                                    <p className="text-2xl font-display font-bold text-accent-800">{solution.final_answer}</p>
+                                    <div className="text-2xl font-display font-bold text-accent-800">
+                                        <MathText text={solution.final_answer} />
+                                    </div>
                                 </div>
                                 {solution.verification && solution.verification !== 'N/A' && (
                                     <div className="bg-tutor-50 rounded-xl p-5 border border-tutor-200">
@@ -1104,7 +1214,9 @@ Design Philosophy:
                                             </svg>
                                             How to Verify
                                         </h4>
-                                        <p className="text-tutor-700 math-content">{solution.verification}</p>
+                                        <div className="text-tutor-700">
+                                            <MathText text={solution.verification} />
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -1402,7 +1514,9 @@ Design Philosophy:
                                             {currentStepData.step_number || currentStep + 1}
                                         </div>
                                         <div className="flex-1">
-                                            <h4 className="font-display font-semibold text-lg text-chalk">{currentStepData.instruction}</h4>
+                                            <h4 className="font-display font-semibold text-lg text-chalk">
+                                                <MathText text={currentStepData.instruction} />
+                                            </h4>
                                             {currentStepData.skill_required && (
                                                 <span className="inline-block mt-2 px-2 py-1 bg-study-100 text-study-700 rounded text-sm">
                                                     Skill: {currentStepData.skill_required}
@@ -1434,16 +1548,16 @@ Design Philosophy:
                                         ) : (
                                             /* Hint exists - show it */
                                             <div className="p-4 bg-study-50 rounded-lg border border-study-200 hint-reveal">
-                                                <p className="text-study-700">
+                                                <div className="text-study-700">
                                                     <span className="font-semibold">💡 Hint (Level {additionalHints[currentStep].level}/3): </span>
-                                                    {additionalHints[currentStep].hint}
-                                                </p>
+                                                    <MathText text={additionalHints[currentStep].hint} />
+                                                </div>
                                                 
                                                 {additionalHints[currentStep].concept && (
-                                                    <p className="text-study-600 text-sm mt-2">
+                                                    <div className="text-study-600 text-sm mt-2">
                                                         <span className="font-medium">Remember: </span>
-                                                        {additionalHints[currentStep].concept}
-                                                    </p>
+                                                        <MathText text={additionalHints[currentStep].concept} />
+                                                    </div>
                                                 )}
                                                 
                                                 {additionalHints[currentStep].encouragement && (
@@ -1532,20 +1646,20 @@ Design Philosophy:
                                             {/* Show correct answer if wrong */}
                                             {!currentResult.is_correct && currentResult.correct_answer && (
                                                 <div className="mt-4 p-4 bg-white rounded-lg border">
-                                                    <p className="text-gray-700">
+                                                    <div className="text-gray-700">
                                                         <span className="font-semibold">Correct answer: </span>
-                                                        <code className="bg-gray-100 px-2 py-1 rounded">{currentResult.correct_answer}</code>
-                                                    </p>
+                                                        <MathText text={currentResult.correct_answer} className="bg-gray-100 px-2 py-1 rounded" />
+                                                    </div>
                                                 </div>
                                             )}
                                             
                                             {/* Show tip if available */}
                                             {currentResult.tip && (
                                                 <div className="mt-4 p-4 bg-white rounded-lg border border-study-200">
-                                                    <p className="text-study-700">
+                                                    <div className="text-study-700">
                                                         <span className="font-semibold">💡 Tip: </span>
-                                                        {currentResult.tip}
-                                                    </p>
+                                                        <MathText text={currentResult.tip} />
+                                                    </div>
                                                 </div>
                                             )}
                                             
@@ -1614,14 +1728,16 @@ Design Philosophy:
                                                         {stepResults[idx]?.is_correct ? '✓' : '✗'}
                                                     </div>
                                                     <div className="flex-1">
-                                                        <p className="font-medium text-gray-700">Step {step.step_number}: {step.objective || step.instruction}</p>
-                                                        <p className="text-sm text-gray-500 mt-1">
-                                                            Your answer: <span className="font-mono">{stepAnswers[idx] || 'No answer'}</span>
-                                                        </p>
+                                                        <div className="font-medium text-gray-700">
+                                                            Step {step.step_number}: <MathText text={step.objective || step.instruction} />
+                                                        </div>
+                                                        <div className="text-sm text-gray-500 mt-1">
+                                                            Your answer: <MathText text={stepAnswers[idx] || 'No answer'} className="font-mono" />
+                                                        </div>
                                                         {!stepResults[idx]?.is_correct && stepResults[idx]?.correct_answer && (
-                                                            <p className="text-sm text-green-600 mt-1">
-                                                                Correct: <span className="font-mono">{stepResults[idx].correct_answer}</span>
-                                                            </p>
+                                                            <div className="text-sm text-green-600 mt-1">
+                                                                Correct: <MathText text={stepResults[idx].correct_answer} className="font-mono" />
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
@@ -1796,7 +1912,9 @@ Design Philosophy:
                             </div>
                             <div className="p-6 space-y-6">
                                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                                    <p className="text-xl text-chalk math-content">{currentQuestionData.question}</p>
+                                    <div className="text-xl text-chalk">
+                                        <MathText text={currentQuestionData.question} />
+                                    </div>
                                 </div>
                                 
                                 {currentQuestionData.hint && !currentResult && (
@@ -1805,7 +1923,7 @@ Design Philosophy:
                                             <svg className={`w-4 h-4 transition-transform ${showHint ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                                             {showHint ? 'Hide Hint' : 'Show Hint'}
                                         </button>
-                                        {showHint && <div className="mt-3 p-4 bg-tutor-50 rounded-lg border border-tutor-200 animate-fade-in"><p className="text-tutor-700">{currentQuestionData.hint}</p></div>}
+                                        {showHint && <div className="mt-3 p-4 bg-tutor-50 rounded-lg border border-tutor-200 animate-fade-in"><div className="text-tutor-700"><MathText text={currentQuestionData.hint} /></div></div>}
                                     </div>
                                 )}
                                 
@@ -1837,7 +1955,7 @@ Design Philosophy:
                                             </h4>
                                         </div>
                                         <p className={currentResult.is_correct ? 'text-green-700' : 'text-red-700'}>{currentResult.feedback}</p>
-                                        {!currentResult.is_correct && <p className="text-gray-700 mt-2"><strong>Correct answer:</strong> {currentQuestionData.correct_answer}</p>}
+                                        {!currentResult.is_correct && <p className="text-gray-700 mt-2"><strong>Correct answer:</strong> <MathText text={currentQuestionData.correct_answer} /></p>}
                                         <button onClick={handleNextQuestion}
                                             className="mt-4 w-full bg-chalk text-white font-display font-semibold py-3 px-6 rounded-xl hover:bg-chalk-light transition-all btn-press">
                                             {currentQuestion < quiz.questions.length - 1 ? 'Next Question →' : 'See Results'}
