@@ -8,20 +8,23 @@ Professor: Gheni Abla
 
 This Flask server provides the backend API for the AI Math Tutor application.
 It handles requests to solve math problems and generate quiz questions using
-the Google Gemini API (FREE tier).
+the Google Gemini API with user-provided API keys.
 
-NEW FEATURE: Supports solving math problems from uploaded files:
-- Images (PNG, JPG, JPEG, GIF, WEBP) - uses Gemini Vision
-- PDFs - extracts text or uses vision for scanned documents
-- DOCX - extracts text content
+Features:
+- Google OAuth integration for user authentication
+- User-provided Gemini API keys (each user uses their own key)
+- Problem solving with step-by-step explanations
+- Quiz generation and answer evaluation
+- FILE UPLOAD SUPPORT: Images (.png, .jpg, .jpeg, .gif, .webp), PDFs, and DOCX files
 
 Requirements:
 - Flask: Web framework for Python
 - Flask-CORS: Cross-Origin Resource Sharing support
 - google-generativeai: Google's Python SDK for Gemini API
-- Pillow: Image processing
-- pdfplumber: PDF text extraction
-- python-docx: DOCX text extraction
+- Pillow: Image processing library
+- pdf2image: PDF to image conversion
+- python-docx: Word document text extraction
+- PyMuPDF (fitz): PDF text extraction
 
 Usage:
     python server.py
@@ -42,7 +45,7 @@ from flask_cors import CORS
 # Google Generative AI SDK for Gemini API integration
 import google.generativeai as genai
 
-# OS module for environment variable access
+# OS module for environment variable access and file operations
 import os
 
 # JSON module for parsing responses
@@ -51,15 +54,41 @@ import json
 # Regular expressions for cleaning JSON responses
 import re
 
-# Base64 encoding for image data
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
+# Base64 encoding for file uploads
 import base64
 
-# Tempfile for temporary file handling
+# IO module for handling byte streams
+import io
+
+# Temporary file handling
 import tempfile
 
-# PIL for image processing
+# PIL/Pillow for image processing
 from PIL import Image
-import io
+
+# PDF processing libraries
+try:
+    import fitz  # PyMuPDF for PDF text and image extraction
+    PYMUPDF_AVAILABLE = True
+except ImportError:
+    PYMUPDF_AVAILABLE = False
+
+try:
+    from pdf2image import convert_from_bytes
+    PDF2IMAGE_AVAILABLE = True
+except ImportError:
+    PDF2IMAGE_AVAILABLE = False
+
+# Word document processing
+try:
+    from docx import Document as DocxDocument
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
 
 # =============================================================================
 # APPLICATION CONFIGURATION
@@ -74,39 +103,18 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 # This allows the frontend (running on a different port) to make requests to this server
 CORS(app)
 
-# Configure maximum upload size (16MB)
+# Configure maximum file upload size (16 MB)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# =============================================================================
-# GEMINI API CONFIGURATION
-# =============================================================================
-
-# Google Gemini API Key (FREE tier - 60 requests per minute!)
-# Get your free key at: https://aistudio.google.com/apikey
-# Set via environment variable: GEMINI_API_KEY
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-
-if not GEMINI_API_KEY:
-    raise ValueError(
-        "GEMINI_API_KEY environment variable is not set.\n"
-        "Get a free key at: https://aistudio.google.com/apikey\n"
-        "Set it using: export GEMINI_API_KEY='your-key-here' (Mac/Linux)\n"
-        "Or: $env:GEMINI_API_KEY='your-key-here' (Windows PowerShell)"
-    )
-
-# Configure the Gemini API with our key
-genai.configure(api_key=GEMINI_API_KEY)
-
-# Initialize the Gemini models
-# gemini-2.0-flash is fast and free, great for educational content
-model = genai.GenerativeModel('gemini-2.0-flash')
+# Allowed file extensions for uploads
+ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'}
+ALLOWED_DOCUMENT_EXTENSIONS = {'pdf', 'docx', 'doc'}
 
 # =============================================================================
 # SYSTEM PROMPTS
 # =============================================================================
 
 # System prompt for solving math problems
-# This instructs Gemini on how to format step-by-step solutions
 SOLVER_SYSTEM_PROMPT = """You are an expert math tutor helping students understand mathematical concepts. 
 Your role is to solve math problems step-by-step with clear, educational explanations.
 
@@ -136,19 +144,27 @@ You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exac
 
 Always be encouraging and educational. Remember, the goal is to help students LEARN, not just get answers."""
 
-# System prompt for extracting math problems from images
-IMAGE_EXTRACT_PROMPT = """You are an expert at reading and understanding mathematical problems from images.
+# System prompt for solving problems from images/files
+FILE_SOLVER_SYSTEM_PROMPT = """You are an expert math tutor helping students understand mathematical concepts.
+You are analyzing a math problem from an uploaded file (image, PDF, or document).
 
-Look at this image and:
-1. Identify any math problems, equations, or mathematical content
-2. Extract the problem(s) clearly and accurately
-3. If there are multiple problems, focus on the main one or list them all
+Your task:
+1. Carefully examine the uploaded content for any mathematical problems
+2. If you find math problems, identify and solve them step-by-step
+3. If the image/document contains multiple problems, focus on the most prominent one or solve all if possible
+4. If the content is unclear or not a math problem, explain what you see and ask for clarification
 
-After identifying the problem, solve it step-by-step.
+When solving problems:
+1. First, identify what type of problem it is (algebra, calculus, geometry, trigonometry, etc.)
+2. List any relevant formulas or theorems that will be used
+3. Show each step clearly with explanations of WHY each step is taken
+4. Use proper mathematical notation
+5. Provide the final answer clearly marked
+6. If applicable, verify the answer or explain how to check it
 
 You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
 {
-    "extracted_problem": "The math problem extracted from the image",
+    "problem_detected": "Description of the problem found in the file",
     "problem_type": "The category of math problem",
     "concepts": ["List of mathematical concepts used"],
     "steps": [
@@ -163,14 +179,19 @@ You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exac
     "verification": "How to verify the answer (if applicable)"
 }
 
-If you cannot find any math problem in the image, respond with:
+If NO math problem is found, respond with:
 {
-    "error": "No math problem found in the image",
-    "suggestion": "Please upload an image containing a math problem"
-}"""
+    "problem_detected": "No math problem found",
+    "problem_type": "N/A",
+    "concepts": [],
+    "steps": [],
+    "final_answer": "Unable to identify a math problem in the uploaded file. Please ensure the file contains a clear mathematical problem.",
+    "verification": "N/A"
+}
+
+Always be encouraging and educational."""
 
 # System prompt for generating quiz questions
-# This instructs Gemini on how to create practice problems
 QUIZ_SYSTEM_PROMPT = """You are an expert math tutor creating practice problems for students.
 Generate quiz questions that test understanding of mathematical concepts.
 
@@ -217,6 +238,19 @@ Consider equivalent forms of answers (e.g., 0.5 = 1/2 = 50%)."""
 # HELPER FUNCTIONS
 # =============================================================================
 
+def get_api_key_from_request():
+    """
+    Extract the Gemini API key from the request headers.
+    
+    The frontend sends the API key in the 'X-API-Key' header.
+    This allows each user to use their own API key.
+    
+    Returns:
+        str: The API key from the request header, or None if not provided
+    """
+    return request.headers.get('X-API-Key')
+
+
 def clean_json_response(text):
     """
     Clean the response text to extract valid JSON.
@@ -235,7 +269,6 @@ def clean_json_response(text):
     text = re.sub(r'```\s*', '', text)
     
     # Try to find JSON object in the text
-    # Look for content between first { and last }
     start = text.find('{')
     end = text.rfind('}')
     
@@ -245,17 +278,175 @@ def clean_json_response(text):
     return text.strip()
 
 
-def call_gemini(prompt, system_prompt):
+def allowed_file(filename, file_type='image'):
     """
-    Make a request to the Gemini API.
+    Check if a file has an allowed extension.
+    
+    Args:
+        filename: Name of the uploaded file
+        file_type: Type of file ('image' or 'document')
+        
+    Returns:
+        Boolean indicating if the file extension is allowed
+    """
+    if '.' not in filename:
+        return False
+    ext = filename.rsplit('.', 1)[1].lower()
+    if file_type == 'image':
+        return ext in ALLOWED_IMAGE_EXTENSIONS
+    elif file_type == 'document':
+        return ext in ALLOWED_DOCUMENT_EXTENSIONS
+    else:
+        return ext in ALLOWED_IMAGE_EXTENSIONS or ext in ALLOWED_DOCUMENT_EXTENSIONS
+
+
+def get_file_extension(filename):
+    """
+    Get the file extension from a filename.
+    
+    Args:
+        filename: Name of the file
+        
+    Returns:
+        Lowercase file extension without the dot
+    """
+    if '.' in filename:
+        return filename.rsplit('.', 1)[1].lower()
+    return ''
+
+
+def process_image_file(file_data, filename):
+    """
+    Process an uploaded image file for Gemini API.
+    
+    Args:
+        file_data: Raw file bytes
+        filename: Original filename
+        
+    Returns:
+        PIL Image object ready for Gemini
+    """
+    image = Image.open(io.BytesIO(file_data))
+    
+    # Convert to RGB if necessary (handles PNG with transparency, etc.)
+    if image.mode in ('RGBA', 'LA', 'P'):
+        # Create a white background
+        background = Image.new('RGB', image.size, (255, 255, 255))
+        if image.mode == 'P':
+            image = image.convert('RGBA')
+        background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+        image = background
+    elif image.mode != 'RGB':
+        image = image.convert('RGB')
+    
+    return image
+
+
+def extract_text_from_pdf(file_data):
+    """
+    Extract text content from a PDF file.
+    
+    Args:
+        file_data: Raw PDF file bytes
+        
+    Returns:
+        Tuple of (extracted_text, list_of_page_images)
+    """
+    text_content = ""
+    page_images = []
+    
+    if PYMUPDF_AVAILABLE:
+        # Use PyMuPDF for text extraction and image conversion
+        pdf_document = fitz.open(stream=file_data, filetype="pdf")
+        
+        for page_num in range(len(pdf_document)):
+            page = pdf_document[page_num]
+            
+            # Extract text
+            text_content += f"\n--- Page {page_num + 1} ---\n"
+            text_content += page.get_text()
+            
+            # Convert page to image (for visual math problems)
+            mat = fitz.Matrix(2, 2)  # 2x zoom for better quality
+            pix = page.get_pixmap(matrix=mat)
+            img_data = pix.tobytes("png")
+            img = Image.open(io.BytesIO(img_data))
+            page_images.append(img)
+        
+        pdf_document.close()
+    
+    elif PDF2IMAGE_AVAILABLE:
+        # Fallback to pdf2image
+        try:
+            images = convert_from_bytes(file_data, dpi=150)
+            page_images = images
+            text_content = "PDF converted to images for visual analysis."
+        except Exception as e:
+            text_content = f"Error converting PDF: {str(e)}"
+    
+    else:
+        text_content = "PDF processing libraries not available. Please install PyMuPDF (fitz) or pdf2image."
+    
+    return text_content, page_images
+
+
+def extract_text_from_docx(file_data):
+    """
+    Extract text content from a DOCX file.
+    
+    Args:
+        file_data: Raw DOCX file bytes
+        
+    Returns:
+        Extracted text content
+    """
+    if not DOCX_AVAILABLE:
+        return "DOCX processing library not available. Please install python-docx."
+    
+    try:
+        doc = DocxDocument(io.BytesIO(file_data))
+        
+        text_content = ""
+        for para in doc.paragraphs:
+            text_content += para.text + "\n"
+        
+        # Also extract text from tables
+        for table in doc.tables:
+            for row in table.rows:
+                row_text = [cell.text for cell in row.cells]
+                text_content += " | ".join(row_text) + "\n"
+        
+        return text_content.strip()
+    
+    except Exception as e:
+        return f"Error reading DOCX file: {str(e)}"
+
+
+def call_gemini(prompt, system_prompt, api_key):
+    """
+    Make a request to the Gemini API using the user's API key.
     
     Args:
         prompt: The user's prompt/question
         system_prompt: Instructions for how Gemini should respond
+        api_key: The user's Gemini API key
         
     Returns:
         Parsed JSON response from Gemini
+        
+    Raises:
+        ValueError: If API key is not provided
+        Exception: If API call fails
     """
+    if not api_key:
+        raise ValueError("API key is required. Please provide your Gemini API key.")
+    
+    # Configure the Gemini API with the user's key
+    genai.configure(api_key=api_key)
+    
+    # Initialize the Gemini model
+    model = genai.GenerativeModel('gemini-2.0-flash')
+    
     # Combine system prompt with user prompt
     full_prompt = f"{system_prompt}\n\nUser request: {prompt}"
     
@@ -271,29 +462,48 @@ def call_gemini(prompt, system_prompt):
     return json.loads(cleaned_text)
 
 
-def call_gemini_with_image(image_data, mime_type, prompt):
+def call_gemini_with_image(images, prompt, system_prompt, api_key):
     """
-    Make a request to the Gemini API with an image.
-    
-    Gemini 2.0 Flash supports vision, allowing it to analyze images
-    containing math problems.
+    Make a request to the Gemini API with image(s) using the user's API key.
     
     Args:
-        image_data: Base64 encoded image data or bytes
-        mime_type: MIME type of the image (e.g., 'image/png')
-        prompt: The prompt to send with the image
+        images: List of PIL Image objects or single PIL Image
+        prompt: Additional text prompt/question
+        system_prompt: Instructions for how Gemini should respond
+        api_key: The user's Gemini API key
         
     Returns:
         Parsed JSON response from Gemini
+        
+    Raises:
+        ValueError: If API key is not provided
+        Exception: If API call fails
     """
-    # Create image part for multimodal input
-    image_part = {
-        "mime_type": mime_type,
-        "data": image_data if isinstance(image_data, bytes) else base64.b64decode(image_data)
-    }
+    if not api_key:
+        raise ValueError("API key is required. Please provide your Gemini API key.")
     
-    # Generate response with image
-    response = model.generate_content([prompt, image_part])
+    # Configure the Gemini API with the user's key
+    genai.configure(api_key=api_key)
+    
+    # Initialize the Gemini model with vision capabilities
+    model = genai.GenerativeModel('gemini-2.0-flash')
+    
+    # Prepare content parts
+    content_parts = []
+    
+    # Add system prompt and user prompt as text
+    full_prompt = f"{system_prompt}\n\nAdditional context from user: {prompt}" if prompt else system_prompt
+    content_parts.append(full_prompt)
+    
+    # Add images
+    if isinstance(images, list):
+        for img in images[:5]:  # Limit to first 5 images
+            content_parts.append(img)
+    else:
+        content_parts.append(images)
+    
+    # Generate response from Gemini
+    response = model.generate_content(content_parts)
     
     # Extract text from response
     response_text = response.text
@@ -302,161 +512,6 @@ def call_gemini_with_image(image_data, mime_type, prompt):
     cleaned_text = clean_json_response(response_text)
     
     return json.loads(cleaned_text)
-
-
-def extract_text_from_pdf(file_data):
-    """
-    Extract text content from a PDF file.
-    
-    Uses pdfplumber for text extraction. Falls back to image-based
-    extraction if text extraction fails (for scanned PDFs).
-    
-    Args:
-        file_data: Binary PDF file data
-        
-    Returns:
-        Tuple of (text_content, is_image_based)
-    """
-    try:
-        import pdfplumber
-        
-        # Save to temporary file
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp:
-            tmp.write(file_data)
-            tmp_path = tmp.name
-        
-        try:
-            text_content = ""
-            with pdfplumber.open(tmp_path) as pdf:
-                for page in pdf.pages:
-                    page_text = page.extract_text()
-                    if page_text:
-                        text_content += page_text + "\n"
-            
-            # If we got meaningful text, return it
-            if text_content.strip() and len(text_content.strip()) > 20:
-                return text_content.strip(), False
-            
-            # Otherwise, try to convert PDF to image for vision
-            return None, True
-            
-        finally:
-            os.unlink(tmp_path)
-            
-    except ImportError:
-        # pdfplumber not installed, try image-based extraction
-        return None, True
-    except Exception as e:
-        print(f"PDF text extraction error: {e}")
-        return None, True
-
-
-def convert_pdf_to_image(file_data):
-    """
-    Convert first page of PDF to image for vision-based extraction.
-    
-    Uses pdf2image library to convert PDF pages to images.
-    
-    Args:
-        file_data: Binary PDF file data
-        
-    Returns:
-        Tuple of (image_bytes, mime_type) or (None, None) on failure
-    """
-    try:
-        from pdf2image import convert_from_bytes
-        
-        # Convert first page of PDF to image
-        images = convert_from_bytes(file_data, first_page=1, last_page=1, dpi=150)
-        
-        if images:
-            # Convert PIL Image to bytes
-            img_byte_arr = io.BytesIO()
-            images[0].save(img_byte_arr, format='PNG')
-            return img_byte_arr.getvalue(), 'image/png'
-            
-    except ImportError:
-        print("pdf2image not installed. Install with: pip install pdf2image")
-    except Exception as e:
-        print(f"PDF to image conversion error: {e}")
-    
-    return None, None
-
-
-def extract_text_from_docx(file_data):
-    """
-    Extract text content from a DOCX file.
-    
-    Uses python-docx library to read Word documents.
-    
-    Args:
-        file_data: Binary DOCX file data
-        
-    Returns:
-        Extracted text content as string
-    """
-    try:
-        from docx import Document
-        
-        # Save to temporary file
-        with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp:
-            tmp.write(file_data)
-            tmp_path = tmp.name
-        
-        try:
-            doc = Document(tmp_path)
-            
-            # Extract text from all paragraphs
-            text_content = []
-            for para in doc.paragraphs:
-                if para.text.strip():
-                    text_content.append(para.text)
-            
-            # Also extract text from tables
-            for table in doc.tables:
-                for row in table.rows:
-                    row_text = []
-                    for cell in row.cells:
-                        if cell.text.strip():
-                            row_text.append(cell.text.strip())
-                    if row_text:
-                        text_content.append(" | ".join(row_text))
-            
-            return "\n".join(text_content)
-            
-        finally:
-            os.unlink(tmp_path)
-            
-    except ImportError:
-        raise ValueError("python-docx not installed. Install with: pip install python-docx")
-    except Exception as e:
-        raise ValueError(f"Failed to read DOCX file: {str(e)}")
-
-
-def get_mime_type(filename):
-    """
-    Get MIME type from filename extension.
-    
-    Args:
-        filename: Name of the file
-        
-    Returns:
-        MIME type string
-    """
-    extension = filename.lower().split('.')[-1] if '.' in filename else ''
-    
-    mime_types = {
-        'png': 'image/png',
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'gif': 'image/gif',
-        'webp': 'image/webp',
-        'pdf': 'application/pdf',
-        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'doc': 'application/msword'
-    }
-    
-    return mime_types.get(extension, 'application/octet-stream')
 
 
 # =============================================================================
@@ -482,11 +537,6 @@ def health_check():
     """
     Health check endpoint to verify the server is running.
     
-    This endpoint is useful for:
-    - Monitoring server status
-    - Verifying deployment success
-    - Load balancer health checks
-    
     Returns:
         JSON response with status "healthy" and HTTP 200
     """
@@ -494,8 +544,82 @@ def health_check():
         "status": "healthy", 
         "message": "AI Math Tutor server is running",
         "model": "Google Gemini 2.0 Flash",
-        "features": ["text_input", "image_upload", "pdf_upload", "docx_upload"]
+        "auth": "Google Sign-In with user-provided API keys",
+        "features": {
+            "file_upload": True,
+            "supported_formats": list(ALLOWED_IMAGE_EXTENSIONS) + list(ALLOWED_DOCUMENT_EXTENSIONS),
+            "pymupdf_available": PYMUPDF_AVAILABLE,
+            "pdf2image_available": PDF2IMAGE_AVAILABLE,
+            "docx_available": DOCX_AVAILABLE
+        }
     })
+
+
+@app.route('/api/config', methods=['GET'])
+def get_config():
+    """
+    Get frontend configuration including Google Client ID and supported file types.
+    
+    Returns:
+        JSON response with configuration values
+    """
+    return jsonify({
+        "google_client_id": os.getenv('GOOGLE_CLIENT_ID', ''),
+        "use_google_auth": bool(os.getenv('GOOGLE_CLIENT_ID')),
+        "supported_file_types": {
+            "images": list(ALLOWED_IMAGE_EXTENSIONS),
+            "documents": list(ALLOWED_DOCUMENT_EXTENSIONS)
+        },
+        "max_file_size_mb": 16
+    })
+
+
+@app.route('/api/verify-key', methods=['POST'])
+def verify_api_key():
+    """
+    Verify that a user's Gemini API key is valid.
+    
+    Request Headers:
+        X-API-Key: The Gemini API key to verify
+    
+    Returns:
+        JSON response indicating if the key is valid
+    """
+    try:
+        api_key = get_api_key_from_request()
+        
+        if not api_key:
+            return jsonify({
+                "valid": False,
+                "error": "API key is required"
+            }), 400
+        
+        # Configure and test the API key with a simple request
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        
+        # Make a simple test request
+        response = model.generate_content("Reply with just the word 'OK'")
+        
+        # If we get here, the key is valid
+        return jsonify({
+            "valid": True,
+            "message": "API key is valid!"
+        })
+        
+    except Exception as e:
+        error_message = str(e)
+        
+        if "API_KEY" in error_message.upper() or "invalid" in error_message.lower() or "401" in error_message:
+            return jsonify({
+                "valid": False,
+                "error": "Invalid API key. Please check your key and try again."
+            }), 401
+        
+        return jsonify({
+            "valid": False,
+            "error": f"Error verifying API key: {error_message}"
+        }), 500
 
 
 @app.route('/api/solve', methods=['POST'])
@@ -503,8 +627,8 @@ def solve_problem():
     """
     Solve a math problem with step-by-step explanations.
     
-    This endpoint accepts a math problem from the user and uses Gemini AI
-    to generate a detailed, educational solution with explanations for each step.
+    Request Headers:
+        X-API-Key: The user's Gemini API key
     
     Request Body (JSON):
         {
@@ -512,22 +636,19 @@ def solve_problem():
         }
     
     Returns:
-        JSON response containing:
-        - problem_type: Category of the math problem
-        - concepts: List of mathematical concepts used
-        - steps: Array of solution steps with explanations
-        - final_answer: The final answer
-        - verification: How to verify the answer
-        
-    Error Responses:
-        400: Missing or invalid problem in request
-        500: API error or server error
+        JSON response containing step-by-step solution
     """
     try:
-        # Extract the problem from the request body
+        api_key = get_api_key_from_request()
+        
+        if not api_key:
+            return jsonify({
+                "error": "API key is required. Please sign in and provide your Gemini API key.",
+                "code": "NO_API_KEY"
+            }), 401
+        
         data = request.get_json()
         
-        # Validate that a problem was provided
         if not data or 'problem' not in data:
             return jsonify({
                 "error": "Missing 'problem' in request body",
@@ -536,36 +657,38 @@ def solve_problem():
         
         problem = data['problem']
         
-        # Validate that the problem is not empty
         if not problem.strip():
             return jsonify({"error": "Problem cannot be empty"}), 400
         
-        # Call Gemini to solve the problem
         solution = call_gemini(
             f"Please solve this math problem step-by-step:\n\n{problem}",
-            SOLVER_SYSTEM_PROMPT
+            SOLVER_SYSTEM_PROMPT,
+            api_key
         )
         
-        # Return the solution to the frontend
         return jsonify(solution)
         
     except json.JSONDecodeError as je:
-        # Handle JSON parsing errors
         return jsonify({
             "error": "Failed to parse AI response. Please try again.",
             "details": str(je)
         }), 500
         
+    except ValueError as ve:
+        return jsonify({
+            "error": str(ve),
+            "code": "API_KEY_ERROR"
+        }), 401
+        
     except Exception as e:
-        # Handle any unexpected errors
         error_message = str(e)
         
-        # Check for common API errors
-        if "API_KEY" in error_message or "invalid" in error_message.lower():
+        if "API_KEY" in error_message.upper() or "invalid" in error_message.lower() or "401" in error_message:
             return jsonify({
-                "error": "API Key Error: Please set a valid Gemini API key in server.py",
+                "error": "Invalid API key. Please check your Gemini API key.",
+                "code": "INVALID_API_KEY",
                 "help": "Get a free key at: https://aistudio.google.com/apikey"
-            }), 500
+            }), 401
             
         return jsonify({"error": f"Server Error: {error_message}"}), 500
 
@@ -575,21 +698,23 @@ def solve_from_file():
     """
     Solve a math problem from an uploaded file (image, PDF, or DOCX).
     
-    This endpoint accepts file uploads and uses Gemini AI to:
-    1. Extract the math problem from the file
-    2. Solve it with step-by-step explanations
+    This endpoint accepts file uploads containing math problems and uses
+    Gemini's vision capabilities to analyze and solve them.
+    
+    Request Headers:
+        X-API-Key: The user's Gemini API key
+    
+    Request Form Data:
+        file: The uploaded file (image, PDF, or DOCX)
+        additional_context: Optional additional context or question about the problem
     
     Supported File Types:
-        - Images: PNG, JPG, JPEG, GIF, WEBP (uses Gemini Vision)
-        - PDF: Extracts text or uses vision for scanned documents
-        - DOCX: Extracts text content
-    
-    Request:
-        multipart/form-data with 'file' field containing the uploaded file
+        - Images: .png, .jpg, .jpeg, .gif, .webp, .bmp
+        - Documents: .pdf, .docx
     
     Returns:
         JSON response containing:
-        - extracted_problem: The problem found in the file
+        - problem_detected: Description of the problem found
         - problem_type: Category of the math problem
         - concepts: List of mathematical concepts used
         - steps: Array of solution steps with explanations
@@ -597,108 +722,147 @@ def solve_from_file():
         - verification: How to verify the answer
         
     Error Responses:
-        400: Missing file or unsupported file type
-        500: API error or server error
+        400: Missing or invalid file
+        401: Missing or invalid API key
+        413: File too large
+        415: Unsupported file type
+        500: Server error
     """
     try:
+        # Get API key
+        api_key = get_api_key_from_request()
+        
+        if not api_key:
+            return jsonify({
+                "error": "API key is required. Please sign in and provide your Gemini API key.",
+                "code": "NO_API_KEY"
+            }), 401
+        
         # Check if file was uploaded
         if 'file' not in request.files:
             return jsonify({
-                "error": "No file uploaded",
-                "help": "Please upload an image (PNG, JPG), PDF, or DOCX file"
+                "error": "No file uploaded. Please upload an image, PDF, or DOCX file containing a math problem.",
+                "supported_types": list(ALLOWED_IMAGE_EXTENSIONS) + list(ALLOWED_DOCUMENT_EXTENSIONS)
             }), 400
         
         file = request.files['file']
         
-        # Check if filename is empty
+        # Check if file was selected
         if file.filename == '':
             return jsonify({"error": "No file selected"}), 400
         
-        # Get file extension and MIME type
-        filename = file.filename.lower()
-        extension = filename.split('.')[-1] if '.' in filename else ''
-        mime_type = get_mime_type(filename)
+        # Get additional context if provided
+        additional_context = request.form.get('additional_context', '')
+        
+        # Get file extension
+        file_ext = get_file_extension(file.filename)
+        
+        # Validate file type
+        if not allowed_file(file.filename, 'all'):
+            return jsonify({
+                "error": f"Unsupported file type: .{file_ext}",
+                "supported_types": list(ALLOWED_IMAGE_EXTENSIONS) + list(ALLOWED_DOCUMENT_EXTENSIONS)
+            }), 415
         
         # Read file data
         file_data = file.read()
         
-        # Supported image extensions
-        image_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-        
         # Process based on file type
-        if extension in image_extensions:
-            # Direct image processing with Gemini Vision
-            solution = call_gemini_with_image(
-                file_data,
-                mime_type,
-                IMAGE_EXTRACT_PROMPT
-            )
-            return jsonify(solution)
-            
-        elif extension == 'pdf':
-            # Try text extraction first
-            text_content, needs_vision = extract_text_from_pdf(file_data)
-            
-            if text_content and not needs_vision:
-                # Use extracted text
-                solution = call_gemini(
-                    f"Please find and solve any math problem(s) in this document:\n\n{text_content}",
-                    SOLVER_SYSTEM_PROMPT
+        if file_ext in ALLOWED_IMAGE_EXTENSIONS:
+            # Process image file
+            try:
+                image = process_image_file(file_data, file.filename)
+                solution = call_gemini_with_image(
+                    image,
+                    additional_context,
+                    FILE_SOLVER_SYSTEM_PROMPT,
+                    api_key
                 )
-                solution['extracted_problem'] = text_content[:500] + "..." if len(text_content) > 500 else text_content
-                return jsonify(solution)
-            else:
-                # Try converting PDF to image
-                image_bytes, img_mime_type = convert_pdf_to_image(file_data)
-                
-                if image_bytes:
-                    solution = call_gemini_with_image(
-                        image_bytes,
-                        img_mime_type,
-                        IMAGE_EXTRACT_PROMPT
-                    )
-                    return jsonify(solution)
-                else:
-                    return jsonify({
-                        "error": "Could not extract content from PDF",
-                        "help": "Try uploading a clearer image or a text-based PDF"
-                    }), 400
-                    
-        elif extension in {'docx', 'doc'}:
-            # Extract text from Word document
-            text_content = extract_text_from_docx(file_data)
+            except Exception as img_error:
+                return jsonify({
+                    "error": f"Failed to process image: {str(img_error)}"
+                }), 400
+        
+        elif file_ext == 'pdf':
+            # Process PDF file
+            text_content, page_images = extract_text_from_pdf(file_data)
             
-            if text_content.strip():
-                solution = call_gemini(
-                    f"Please find and solve any math problem(s) in this document:\n\n{text_content}",
-                    SOLVER_SYSTEM_PROMPT
+            if page_images:
+                # Use images for visual analysis (better for math problems with diagrams)
+                solution = call_gemini_with_image(
+                    page_images,
+                    f"Extracted text for reference:\n{text_content}\n\nAdditional context: {additional_context}",
+                    FILE_SOLVER_SYSTEM_PROMPT,
+                    api_key
                 )
-                solution['extracted_problem'] = text_content[:500] + "..." if len(text_content) > 500 else text_content
-                return jsonify(solution)
+            elif text_content:
+                # Fallback to text-only analysis
+                solution = call_gemini(
+                    f"The following math problem was extracted from a PDF file:\n\n{text_content}\n\nAdditional context: {additional_context}",
+                    SOLVER_SYSTEM_PROMPT,
+                    api_key
+                )
             else:
                 return jsonify({
-                    "error": "No text content found in the document",
-                    "help": "The document appears to be empty or contains only images"
+                    "error": "Could not extract content from PDF. Please ensure the PDF is not password-protected and contains readable content.",
+                    "hint": "Try taking a screenshot of the problem instead."
                 }), 400
-        else:
-            return jsonify({
-                "error": f"Unsupported file type: .{extension}",
-                "supported": ["png", "jpg", "jpeg", "gif", "webp", "pdf", "docx"]
-            }), 400
+        
+        elif file_ext in ['docx', 'doc']:
+            # Process DOCX file
+            text_content = extract_text_from_docx(file_data)
             
-    except json.JSONDecodeError:
+            if text_content and not text_content.startswith("Error"):
+                solution = call_gemini(
+                    f"The following math problem was extracted from a Word document:\n\n{text_content}\n\nAdditional context: {additional_context}",
+                    SOLVER_SYSTEM_PROMPT,
+                    api_key
+                )
+            else:
+                return jsonify({
+                    "error": text_content if text_content else "Could not extract content from DOCX file.",
+                    "hint": "Try copying the problem text and using the text input instead."
+                }), 400
+        
+        else:
+            return jsonify({"error": "Unsupported file type"}), 415
+        
+        # Add file info to response
+        solution['source_file'] = {
+            'filename': file.filename,
+            'type': file_ext,
+            'size_bytes': len(file_data)
+        }
+        
+        return jsonify(solution)
+        
+    except json.JSONDecodeError as je:
         return jsonify({
             "error": "Failed to parse AI response. Please try again.",
+            "details": str(je)
         }), 500
+        
+    except ValueError as ve:
+        return jsonify({
+            "error": str(ve),
+            "code": "API_KEY_ERROR"
+        }), 401
         
     except Exception as e:
         error_message = str(e)
         
-        if "API_KEY" in error_message or "invalid" in error_message.lower():
+        if "API_KEY" in error_message.upper() or "invalid" in error_message.lower() or "401" in error_message:
             return jsonify({
-                "error": "API Key Error: Please set a valid Gemini API key",
+                "error": "Invalid API key. Please check your Gemini API key.",
+                "code": "INVALID_API_KEY",
                 "help": "Get a free key at: https://aistudio.google.com/apikey"
-            }), 500
+            }), 401
+        
+        if "too large" in error_message.lower() or "size" in error_message.lower():
+            return jsonify({
+                "error": "File too large. Maximum file size is 16 MB.",
+                "code": "FILE_TOO_LARGE"
+            }), 413
             
         return jsonify({"error": f"Server Error: {error_message}"}), 500
 
@@ -708,8 +872,8 @@ def generate_quiz():
     """
     Generate quiz questions for a specified math topic.
     
-    This endpoint creates practice problems based on the requested topic
-    and difficulty level to help students test their understanding.
+    Request Headers:
+        X-API-Key: The user's Gemini API key
     
     Request Body (JSON):
         {
@@ -719,19 +883,19 @@ def generate_quiz():
         }
     
     Returns:
-        JSON response containing:
-        - quiz_topic: The topic of the quiz
-        - questions: Array of quiz questions with hints and answers
-        
-    Error Responses:
-        400: Missing or invalid topic in request
-        500: API error or server error
+        JSON response containing quiz questions
     """
     try:
-        # Extract quiz parameters from the request body
+        api_key = get_api_key_from_request()
+        
+        if not api_key:
+            return jsonify({
+                "error": "API key is required. Please sign in and provide your Gemini API key.",
+                "code": "NO_API_KEY"
+            }), 401
+        
         data = request.get_json()
         
-        # Validate that a topic was provided
         if not data or 'topic' not in data:
             return jsonify({
                 "error": "Missing 'topic' in request body",
@@ -739,32 +903,38 @@ def generate_quiz():
             }), 400
         
         topic = data['topic']
-        num_questions = data.get('num_questions', 3)  # Default to 3 questions
-        difficulty = data.get('difficulty', 'mixed')  # Default to mixed difficulty
+        num_questions = data.get('num_questions', 3)
+        difficulty = data.get('difficulty', 'mixed')
         
         # Validate number of questions (limit to prevent abuse)
-        num_questions = min(max(1, num_questions), 10)  # Between 1 and 10
+        num_questions = min(max(1, num_questions), 10)
         
-        # Call Gemini to generate the quiz
         quiz = call_gemini(
             f"Generate {num_questions} {difficulty} difficulty quiz questions about {topic}.",
-            QUIZ_SYSTEM_PROMPT
+            QUIZ_SYSTEM_PROMPT,
+            api_key
         )
         
-        # Return the generated quiz
         return jsonify(quiz)
         
     except json.JSONDecodeError:
         return jsonify({"error": "Failed to generate quiz. Please try again."}), 500
         
+    except ValueError as ve:
+        return jsonify({
+            "error": str(ve),
+            "code": "API_KEY_ERROR"
+        }), 401
+        
     except Exception as e:
         error_message = str(e)
         
-        if "API_KEY" in error_message or "invalid" in error_message.lower():
+        if "API_KEY" in error_message.upper() or "invalid" in error_message.lower() or "401" in error_message:
             return jsonify({
-                "error": "API Key Error: Please set a valid Gemini API key in server.py",
+                "error": "Invalid API key. Please check your Gemini API key.",
+                "code": "INVALID_API_KEY",
                 "help": "Get a free key at: https://aistudio.google.com/apikey"
-            }), 500
+            }), 401
             
         return jsonify({"error": f"Server Error: {error_message}"}), 500
 
@@ -774,8 +944,8 @@ def evaluate_answer():
     """
     Evaluate a student's answer to a quiz question.
     
-    This endpoint compares the student's answer to the correct answer
-    and provides educational feedback.
+    Request Headers:
+        X-API-Key: The user's Gemini API key
     
     Request Body (JSON):
         {
@@ -785,20 +955,19 @@ def evaluate_answer():
         }
     
     Returns:
-        JSON response containing:
-        - is_correct: Boolean indicating if the answer is correct
-        - feedback: Encouraging feedback for the student
-        - explanation: Explanation of the correct approach (if wrong)
-        
-    Error Responses:
-        400: Missing required fields in request
-        500: API error or server error
+        JSON response containing evaluation feedback
     """
     try:
-        # Extract evaluation parameters from the request body
+        api_key = get_api_key_from_request()
+        
+        if not api_key:
+            return jsonify({
+                "error": "API key is required. Please sign in and provide your Gemini API key.",
+                "code": "NO_API_KEY"
+            }), 401
+        
         data = request.get_json()
         
-        # Validate required fields
         required_fields = ['question', 'correct_answer', 'student_answer']
         for field in required_fields:
             if field not in data:
@@ -811,7 +980,6 @@ def evaluate_answer():
         correct_answer = data['correct_answer']
         student_answer = data['student_answer']
         
-        # Call Gemini to evaluate the answer
         evaluation = call_gemini(
             f"""Evaluate this student's answer:
             
@@ -820,10 +988,10 @@ Correct Answer: {correct_answer}
 Student's Answer: {student_answer}
 
 Please determine if the student's answer is correct (considering equivalent forms) and provide feedback.""",
-            EVALUATOR_SYSTEM_PROMPT
+            EVALUATOR_SYSTEM_PROMPT,
+            api_key
         )
         
-        # Return the evaluation
         return jsonify(evaluation)
         
     except json.JSONDecodeError:
@@ -835,14 +1003,21 @@ Please determine if the student's answer is correct (considering equivalent form
             "explanation": "" if is_correct else f"The correct answer was: {correct_answer}"
         })
         
+    except ValueError as ve:
+        return jsonify({
+            "error": str(ve),
+            "code": "API_KEY_ERROR"
+        }), 401
+        
     except Exception as e:
         error_message = str(e)
         
-        if "API_KEY" in error_message or "invalid" in error_message.lower():
+        if "API_KEY" in error_message.upper() or "invalid" in error_message.lower() or "401" in error_message:
             return jsonify({
-                "error": "API Key Error: Please set a valid Gemini API key in server.py",
+                "error": "Invalid API key. Please check your Gemini API key.",
+                "code": "INVALID_API_KEY",
                 "help": "Get a free key at: https://aistudio.google.com/apikey"
-            }), 500
+            }), 401
             
         return jsonify({"error": f"Server Error: {error_message}"}), 500
 
@@ -857,30 +1032,35 @@ if __name__ == '__main__':
     
     When running this file directly (python server.py), it will:
     1. Start the Flask development server
-    2. Enable debug mode for development (auto-reload on changes)
+    2. Enable debug mode for development
     3. Listen on all interfaces (0.0.0.0) on port 5000
     4. Serve both the API and the frontend
-    
-    For production deployment, use a production WSGI server like Gunicorn:
-        gunicorn -w 4 -b 0.0.0.0:5000 server:app
     """
     print("=" * 60)
     print("AI Math Tutor - Backend Server")
     print("=" * 60)
     print()
-    print("  Powered by Google Gemini (FREE tier)")
-    print()
-    print("  NEW: Upload images, PDFs, or DOCX files with math problems!")
+    print("  Powered by Google Gemini (Users provide their own API key)")
     print()
     print("  Open your browser and go to:")
     print()
     print("     http://localhost:5000")
     print()
-    print("  ✓  Gemini API Key loaded from environment")
+    print("  Features:")
+    print("     ✓  Google Sign-In authentication")
+    print("     ✓  User-provided Gemini API keys")
+    print("     ✓  Step-by-step math solutions")
+    print("     ✓  Interactive practice quizzes")
+    print("     ✓  FILE UPLOAD SUPPORT:")
+    print(f"        - Images: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}")
+    print(f"        - Documents: {', '.join(ALLOWED_DOCUMENT_EXTENSIONS)}")
+    print()
+    print("  Library Status:")
+    print(f"     {'✓' if PYMUPDF_AVAILABLE else '✗'}  PyMuPDF (PDF processing)")
+    print(f"     {'✓' if PDF2IMAGE_AVAILABLE else '✗'}  pdf2image (PDF to image)")
+    print(f"     {'✓' if DOCX_AVAILABLE else '✗'}  python-docx (Word documents)")
     print()
     print("=" * 60)
     
     # Run the Flask development server
-    # debug=True enables auto-reload and detailed error messages
-    # host='0.0.0.0' allows connections from any IP (needed for Docker/cloud)
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -14,38 +14,83 @@
 #
 # =============================================================================
 
+# -----------------------------------------------------------------------------
+# CORE FRAMEWORK
+# -----------------------------------------------------------------------------
+
 # Flask - Web framework for building the backend API
 # Used to create REST endpoints for problem solving and quiz generation
 flask>=3.0.0
 
 # Flask-CORS - Cross-Origin Resource Sharing support for Flask
-# Required to allow the frontend (running on a different port) to communicate with the backend
+# Required to allow the frontend to communicate with the backend
 flask-cors>=4.0.0
+
+# Python-dotenv - Load environment variables from .env file
+# Used to load Google Client ID and other configuration
+python-dotenv>=1.0.0
+
+# -----------------------------------------------------------------------------
+# AI/LLM INTEGRATION
+# -----------------------------------------------------------------------------
 
 # Google Generative AI - Official Python SDK for Gemini API (FREE!)
 # Used to send requests to Gemini for solving math problems and generating quizzes
-# Gemini 2.0 Flash supports vision for processing images
+# Each user provides their own API key
 google-generativeai>=0.3.0
 
-# =============================================================================
-# NEW: File Processing Dependencies (for image, PDF, and DOCX support)
-# =============================================================================
+# -----------------------------------------------------------------------------
+# FILE UPLOAD & PROCESSING
+# -----------------------------------------------------------------------------
 
 # Pillow - Python Imaging Library
-# Used for image processing and validation
+# Required for processing uploaded image files (PNG, JPG, etc.)
+# Used to convert and prepare images for the Gemini Vision API
 Pillow>=10.0.0
 
-# pdfplumber - PDF text and table extraction
-# Used to extract text content from PDF files
-pdfplumber>=0.10.0
+# PyMuPDF (fitz) - PDF processing library
+# Used to extract text and convert PDF pages to images
+# This is the PRIMARY PDF processing library for this application
+PyMuPDF>=1.23.0
+
+# pdf2image - Convert PDF pages to images (FALLBACK)
+# Alternative method for PDF processing if PyMuPDF is unavailable
+# Requires poppler-utils to be installed on the system
+pdf2image>=1.16.0
 
 # python-docx - Microsoft Word document processing
-# Used to extract text content from DOCX files
-python-docx>=1.0.0
+# Used to extract text from DOCX files uploaded by users
+python-docx>=1.1.0
 
-# pdf2image - Convert PDF pages to images (optional, for scanned PDFs)
-# Requires poppler-utils system package: 
-#   - Mac: brew install poppler
+# -----------------------------------------------------------------------------
+# OPTIONAL DEPENDENCIES (for enhanced PDF processing)
+# -----------------------------------------------------------------------------
+
+# pytesseract - OCR for scanned documents (optional)
+# Uncomment if you need to process scanned PDFs
+# pytesseract>=0.3.10
+
+# Note: pdf2image requires poppler-utils to be installed on your system:
 #   - Ubuntu/Debian: sudo apt-get install poppler-utils
-#   - Windows: Download from https://github.com/oschwartz10612/poppler-windows/releases
-pdf2image>=1.16.0
+#   - macOS: brew install poppler
+#   - Windows: Download from https://github.com/oschwartz10612/poppler-windows
+
+# =============================================================================
+# INSTALLATION INSTRUCTIONS
+# =============================================================================
+#
+# 1. Create a virtual environment (recommended):
+#    python -m venv venv
+#    source venv/bin/activate  # On Windows: venv\Scripts\activate
+#
+# 2. Install dependencies:
+#    pip install -r requirements.txt
+#
+# 3. For PDF processing, also install system dependencies:
+#    Ubuntu/Debian: sudo apt-get install poppler-utils
+#    macOS: brew install poppler
+#
+# 4. Run the server:
+#    python server.py
+#
+# =============================================================================
