@@ -147,15 +147,62 @@ Always be encouraging and educational. Remember, the goal is to help students LE
 # System prompt for solving problems from images/files
 FILE_SOLVER_SYSTEM_PROMPT = """You are an expert math tutor. Analyze the uploaded image/document and solve any math problems you find.
 
-IMPORTANT: You must respond with ONLY valid JSON, no other text. Do not include markdown formatting or code blocks.
+CRITICAL INSTRUCTIONS:
+1. You MUST respond with ONLY valid JSON - no markdown, no code blocks, no explanatory text
+2. Solve the problem completely with detailed step-by-step explanations
+3. Each step should clearly explain what is being done and why
 
-If you find a math problem, respond with this exact JSON structure:
-{"problem_detected": "describe the problem you found", "problem_type": "algebra/geometry/calculus/etc", "concepts": ["concept1", "concept2"], "steps": [{"step_number": 1, "action": "what you did", "explanation": "why", "result": "the result"}], "final_answer": "the answer", "verification": "how to check"}
+Required JSON format (copy this structure exactly):
+{
+    "problem_detected": "The exact math problem found in the image/document",
+    "problem_type": "algebra/geometry/calculus/trigonometry/arithmetic",
+    "concepts": ["list", "of", "concepts", "used"],
+    "steps": [
+        {
+            "step_number": 1,
+            "action": "Description of this step",
+            "explanation": "Why we perform this step and what mathematical principle is applied",
+            "result": "The result after completing this step"
+        },
+        {
+            "step_number": 2,
+            "action": "Description of next step",
+            "explanation": "Explanation of this step",
+            "result": "Result of this step"
+        }
+    ],
+    "final_answer": "The complete final answer",
+    "verification": "How to verify this answer is correct"
+}
 
-If you cannot find a math problem, respond with:
-{"problem_detected": "No math problem found", "problem_type": "N/A", "concepts": [], "steps": [], "final_answer": "Could not identify a math problem in this file", "verification": "N/A"}
+IMPORTANT: Include at least 2-4 detailed steps showing the complete solution process. Each step must have all four fields (step_number, action, explanation, result).
 
-Remember: Return ONLY the JSON object, nothing else."""
+If no math problem is found, return:
+{"problem_detected": "No math problem found", "problem_type": "N/A", "concepts": [], "steps": [{"step_number": 1, "action": "No problem detected", "explanation": "Could not identify a mathematical problem in the uploaded content", "result": "N/A"}], "final_answer": "No math problem found in the uploaded file", "verification": "N/A"}"""
+
+# System prompt specifically for PDF text-based problems
+PDF_TEXT_SOLVER_PROMPT = """You are an expert math tutor. The following text was extracted from a PDF document containing a math problem. Solve it step-by-step.
+
+CRITICAL: Respond with ONLY valid JSON, no other text or formatting.
+
+JSON format to use:
+{
+    "problem_detected": "Restate the math problem clearly",
+    "problem_type": "algebra/geometry/calculus/trigonometry/etc",
+    "concepts": ["mathematical concepts used"],
+    "steps": [
+        {
+            "step_number": 1,
+            "action": "What is done in this step",
+            "explanation": "Why this step is necessary",
+            "result": "Result after this step"
+        }
+    ],
+    "final_answer": "The final answer",
+    "verification": "How to verify the answer"
+}
+
+Provide detailed steps (at least 2-4 steps) that show the complete solution process."""
 
 # System prompt for generating quiz questions
 QUIZ_SYSTEM_PROMPT = """You are an expert math tutor creating practice problems for students.
@@ -424,7 +471,7 @@ def call_gemini(prompt, system_prompt, api_key):
     model = genai.GenerativeModel('gemini-2.0-flash')
     
     # Combine system prompt with user prompt
-    full_prompt = f"{system_prompt}\n\nUser request: {prompt}"
+    full_prompt = f"{system_prompt}\n\n{prompt}"
     
     # Generate response from Gemini
     response = model.generate_content(full_prompt)
@@ -435,7 +482,39 @@ def call_gemini(prompt, system_prompt, api_key):
     # Clean and parse JSON
     cleaned_text = clean_json_response(response_text)
     
-    return json.loads(cleaned_text)
+    try:
+        return json.loads(cleaned_text)
+    except json.JSONDecodeError as e:
+        # If JSON parsing fails, try to construct a response from the text
+        print(f"JSON parse error in call_gemini: {e}")
+        print(f"Raw response (first 500 chars): {response_text[:500]}")
+        
+        # Try to extract useful information from the response
+        # Look for common patterns in the response
+        final_answer = ""
+        if "answer" in response_text.lower():
+            # Try to extract an answer
+            lines = response_text.split('\n')
+            for line in lines:
+                if "answer" in line.lower() and ('=' in line or ':' in line):
+                    final_answer = line.split('=')[-1].split(':')[-1].strip()
+                    break
+        
+        return {
+            "problem_detected": "Problem analyzed",
+            "problem_type": "Mathematical Problem",
+            "concepts": [],
+            "steps": [
+                {
+                    "step_number": 1,
+                    "action": "Solution",
+                    "explanation": response_text[:1000] if len(response_text) > 1000 else response_text,
+                    "result": final_answer or "See explanation"
+                }
+            ],
+            "final_answer": final_answer or "See the explanation above for the complete solution",
+            "verification": "Verify by checking the steps above"
+        }
 
 
 def call_gemini_with_image(images, prompt, system_prompt, api_key):
@@ -517,6 +596,87 @@ def call_gemini_with_image(images, prompt, system_prompt, api_key):
     except Exception as e:
         print(f"Gemini API error: {e}")
         raise
+
+
+def validate_solution_response(solution, source_description="uploaded file"):
+    """
+    Validate and fill in missing fields in a solution response.
+    
+    This ensures the frontend always receives a complete response structure
+    even if the AI didn't return all expected fields.
+    
+    Args:
+        solution: The solution dictionary from Gemini
+        source_description: Description of where the problem came from
+        
+    Returns:
+        Validated solution dictionary with all required fields
+    """
+    if not solution:
+        solution = {}
+    
+    # Ensure problem_detected field exists
+    if not solution.get('problem_detected'):
+        solution['problem_detected'] = f"Problem from {source_description}"
+    
+    # Ensure problem_type field exists
+    if not solution.get('problem_type'):
+        solution['problem_type'] = "Mathematical Problem"
+    
+    # Ensure concepts is a list
+    if not solution.get('concepts') or not isinstance(solution.get('concepts'), list):
+        solution['concepts'] = []
+    
+    # Ensure steps is a non-empty list with proper structure
+    if not solution.get('steps') or not isinstance(solution.get('steps'), list) or len(solution['steps']) == 0:
+        # Check if there's a final_answer we can use
+        if solution.get('final_answer'):
+            solution['steps'] = [
+                {
+                    "step_number": 1,
+                    "action": "Solution",
+                    "explanation": "The problem was analyzed and solved.",
+                    "result": str(solution.get('final_answer', ''))
+                }
+            ]
+        else:
+            solution['steps'] = [
+                {
+                    "step_number": 1,
+                    "action": "Analysis Required",
+                    "explanation": "The AI detected a problem but couldn't generate detailed steps. Please try again or enter the problem manually.",
+                    "result": "Try the text input mode for better results"
+                }
+            ]
+    else:
+        # Validate each step has required fields
+        for i, step in enumerate(solution['steps']):
+            if not isinstance(step, dict):
+                solution['steps'][i] = {
+                    "step_number": i + 1,
+                    "action": "Step",
+                    "explanation": str(step),
+                    "result": ""
+                }
+            else:
+                step['step_number'] = step.get('step_number', i + 1)
+                step['action'] = step.get('action', 'Step')
+                step['explanation'] = step.get('explanation', '')
+                step['result'] = step.get('result', '')
+    
+    # Ensure final_answer exists
+    if not solution.get('final_answer'):
+        # Try to get it from the last step
+        if solution['steps'] and solution['steps'][-1].get('result'):
+            solution['final_answer'] = solution['steps'][-1]['result']
+        else:
+            solution['final_answer'] = "See steps above for the solution"
+    
+    # Ensure verification exists
+    if not solution.get('verification'):
+        solution['verification'] = "Verify by substituting the answer back into the original problem"
+    
+    return solution
 
 
 # =============================================================================
@@ -779,10 +939,11 @@ def solve_from_file():
                 image = process_image_file(file_data, file.filename)
                 solution = call_gemini_with_image(
                     image,
-                    additional_context,
+                    additional_context or "Please solve the math problem shown in this image.",
                     FILE_SOLVER_SYSTEM_PROMPT,
                     api_key
                 )
+                solution = validate_solution_response(solution, f"image: {file.filename}")
             except Exception as img_error:
                 return jsonify({
                     "error": f"Failed to process image: {str(img_error)}"
@@ -792,42 +953,50 @@ def solve_from_file():
             # Process PDF file
             text_content, page_images = extract_text_from_pdf(file_data)
             
-            # First try text-based analysis if we have good text content
-            if text_content and len(text_content.strip()) > 50 and "Error" not in text_content:
+            # Clean up the extracted text (remove excessive whitespace, page markers)
+            if text_content:
+                # Remove page markers and clean up
+                text_content = re.sub(r'---\s*Page\s*\d+\s*---', '\n', text_content)
+                text_content = re.sub(r'\n{3,}', '\n\n', text_content)  # Remove excessive newlines
+                text_content = text_content.strip()
+            
+            solution = None
+            
+            # First try with images if available (better for math with symbols/diagrams)
+            if page_images:
                 try:
-                    # Try text-based solving first (more reliable for text-heavy PDFs)
-                    solution = call_gemini(
-                        f"The following content was extracted from a PDF file. Please identify and solve any math problems:\n\n{text_content}\n\nAdditional context: {additional_context}",
-                        SOLVER_SYSTEM_PROMPT,
-                        api_key
-                    )
-                    # Add indicator that this was from PDF text
-                    solution['problem_detected'] = solution.get('problem_detected', f"Problem extracted from PDF text")
-                except Exception as text_error:
-                    print(f"Text-based PDF solving failed: {text_error}")
-                    # Fall through to image-based processing
-                    solution = None
-                
-                if solution:
-                    # Text-based solution worked
-                    pass
-                elif page_images:
-                    # Fallback to image-based analysis
+                    context_prompt = f"Solve this math problem. PDF text for reference: {text_content[:500] if text_content else 'N/A'}"
+                    if additional_context:
+                        context_prompt += f"\n\nUser context: {additional_context}"
+                    
                     solution = call_gemini_with_image(
-                        page_images[:2],  # Limit to first 2 pages
-                        f"Extracted text for reference:\n{text_content[:1000]}\n\nAdditional context: {additional_context}",
+                        page_images[:2],
+                        context_prompt,
                         FILE_SOLVER_SYSTEM_PROMPT,
                         api_key
                     )
-            elif page_images:
-                # No good text, use images for visual analysis
-                solution = call_gemini_with_image(
-                    page_images[:2],  # Limit to first 2 pages
-                    additional_context,
-                    FILE_SOLVER_SYSTEM_PROMPT,
-                    api_key
-                )
-            else:
+                    solution = validate_solution_response(solution, "PDF analysis")
+                except Exception as img_error:
+                    print(f"Image-based PDF solving failed: {img_error}")
+                    solution = None
+            
+            # Fallback to text-based if image-based failed or no images
+            if (not solution or not solution.get('final_answer') or solution.get('final_answer') == 'See steps above for the solution') and text_content and len(text_content.strip()) > 20:
+                try:
+                    # Create a specific prompt for PDF math problems
+                    pdf_prompt = f"""PDF Content:
+{text_content}
+
+{f'Additional context: {additional_context}' if additional_context else ''}"""
+                    
+                    solution = call_gemini(pdf_prompt, PDF_TEXT_SOLVER_PROMPT, api_key)
+                    solution = validate_solution_response(solution, text_content[:100])
+                    
+                except Exception as text_error:
+                    print(f"Text-based PDF solving failed: {text_error}")
+            
+            # If we still don't have a solution, return an error
+            if not solution:
                 return jsonify({
                     "error": "Could not extract content from PDF. Please ensure the PDF is not password-protected and contains readable content.",
                     "hint": "Try taking a screenshot of the problem instead."
@@ -838,11 +1007,13 @@ def solve_from_file():
             text_content = extract_text_from_docx(file_data)
             
             if text_content and not text_content.startswith("Error"):
-                solution = call_gemini(
-                    f"The following math problem was extracted from a Word document:\n\n{text_content}\n\nAdditional context: {additional_context}",
-                    SOLVER_SYSTEM_PROMPT,
-                    api_key
-                )
+                docx_prompt = f"""Document Content:
+{text_content}
+
+{f'Additional context: {additional_context}' if additional_context else ''}"""
+                
+                solution = call_gemini(docx_prompt, PDF_TEXT_SOLVER_PROMPT, api_key)
+                solution = validate_solution_response(solution, f"Word document: {file.filename}")
             else:
                 return jsonify({
                     "error": text_content if text_content else "Could not extract content from DOCX file.",
