@@ -145,64 +145,42 @@ You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exac
 Always be encouraging and educational. Remember, the goal is to help students LEARN, not just get answers."""
 
 # System prompt for solving problems from images/files
-FILE_SOLVER_SYSTEM_PROMPT = """You are an expert math tutor. Analyze the uploaded image/document and solve any math problems you find.
+FILE_SOLVER_SYSTEM_PROMPT = """You are a math tutor. Look at this image and solve any math problem you see.
 
-CRITICAL INSTRUCTIONS:
-1. You MUST respond with ONLY valid JSON - no markdown, no code blocks, no explanatory text
-2. Solve the problem completely with detailed step-by-step explanations
-3. Each step should clearly explain what is being done and why
+IMPORTANT: Respond with ONLY a JSON object (no markdown, no other text):
 
-Required JSON format (copy this structure exactly):
 {
-    "problem_detected": "The exact math problem found in the image/document",
-    "problem_type": "algebra/geometry/calculus/trigonometry/arithmetic",
-    "concepts": ["list", "of", "concepts", "used"],
+    "problem_detected": "the math problem from the image",
+    "problem_type": "algebra/geometry/calculus/etc",
+    "concepts": ["concept1", "concept2"],
     "steps": [
-        {
-            "step_number": 1,
-            "action": "Description of this step",
-            "explanation": "Why we perform this step and what mathematical principle is applied",
-            "result": "The result after completing this step"
-        },
-        {
-            "step_number": 2,
-            "action": "Description of next step",
-            "explanation": "Explanation of this step",
-            "result": "Result of this step"
-        }
+        {"step_number": 1, "action": "What we do", "explanation": "Why", "result": "Result"},
+        {"step_number": 2, "action": "Next step", "explanation": "Why", "result": "Result"}
     ],
-    "final_answer": "The complete final answer",
-    "verification": "How to verify this answer is correct"
+    "final_answer": "THE FINAL ANSWER",
+    "verification": "How to verify"
 }
 
-IMPORTANT: Include at least 2-4 detailed steps showing the complete solution process. Each step must have all four fields (step_number, action, explanation, result).
+Include at least 2 detailed steps. The final_answer field must contain the actual numerical or algebraic answer."""
 
-If no math problem is found, return:
-{"problem_detected": "No math problem found", "problem_type": "N/A", "concepts": [], "steps": [{"step_number": 1, "action": "No problem detected", "explanation": "Could not identify a mathematical problem in the uploaded content", "result": "N/A"}], "final_answer": "No math problem found in the uploaded file", "verification": "N/A"}"""
+# System prompt specifically for PDF/DOCX text-based problems - SIMPLE AND DIRECT
+PDF_TEXT_SOLVER_PROMPT = """You are a math tutor. Solve the math problem below step by step.
 
-# System prompt specifically for PDF text-based problems
-PDF_TEXT_SOLVER_PROMPT = """You are an expert math tutor. The following text was extracted from a PDF document containing a math problem. Solve it step-by-step.
+IMPORTANT: Your response must be ONLY a JSON object with this exact structure (no other text):
 
-CRITICAL: Respond with ONLY valid JSON, no other text or formatting.
-
-JSON format to use:
 {
-    "problem_detected": "Restate the math problem clearly",
-    "problem_type": "algebra/geometry/calculus/trigonometry/etc",
-    "concepts": ["mathematical concepts used"],
+    "problem_detected": "restate the problem here",
+    "problem_type": "algebra",
+    "concepts": ["concept1"],
     "steps": [
-        {
-            "step_number": 1,
-            "action": "What is done in this step",
-            "explanation": "Why this step is necessary",
-            "result": "Result after this step"
-        }
+        {"step_number": 1, "action": "First step", "explanation": "Why we do this", "result": "result"},
+        {"step_number": 2, "action": "Second step", "explanation": "Why we do this", "result": "result"}
     ],
-    "final_answer": "The final answer",
-    "verification": "How to verify the answer"
+    "final_answer": "THE ANSWER",
+    "verification": "How to check"
 }
 
-Provide detailed steps (at least 2-4 steps) that show the complete solution process."""
+Solve this problem:"""
 
 # System prompt for generating quiz questions
 QUIZ_SYSTEM_PROMPT = """You are an expert math tutor creating practice problems for students.
@@ -615,22 +593,44 @@ def validate_solution_response(solution, source_description="uploaded file"):
     if not solution:
         solution = {}
     
+    # List of invalid/placeholder answers to detect
+    invalid_answers = ['N/A', 'n/a', '', None, 'Unable to determine', 
+                       'See steps above', 'No math problem found', 
+                       'Could not identify', 'Unable to solve']
+    
+    def is_valid_answer(ans):
+        if not ans:
+            return False
+        ans_str = str(ans).strip().lower()
+        for invalid in invalid_answers:
+            if invalid and invalid.lower() in ans_str:
+                return False
+        return len(ans_str) > 0
+    
     # Ensure problem_detected field exists
     if not solution.get('problem_detected'):
         solution['problem_detected'] = f"Problem from {source_description}"
     
     # Ensure problem_type field exists
-    if not solution.get('problem_type'):
+    if not solution.get('problem_type') or solution.get('problem_type') == 'N/A':
         solution['problem_type'] = "Mathematical Problem"
     
     # Ensure concepts is a list
     if not solution.get('concepts') or not isinstance(solution.get('concepts'), list):
         solution['concepts'] = []
     
+    # Check if we have valid steps with real results
+    has_valid_steps = False
+    if solution.get('steps') and isinstance(solution.get('steps'), list) and len(solution['steps']) > 0:
+        for step in solution['steps']:
+            if isinstance(step, dict) and step.get('result') and is_valid_answer(step.get('result')):
+                has_valid_steps = True
+                break
+    
     # Ensure steps is a non-empty list with proper structure
-    if not solution.get('steps') or not isinstance(solution.get('steps'), list) or len(solution['steps']) == 0:
+    if not has_valid_steps:
         # Check if there's a final_answer we can use
-        if solution.get('final_answer'):
+        if solution.get('final_answer') and is_valid_answer(solution.get('final_answer')):
             solution['steps'] = [
                 {
                     "step_number": 1,
@@ -643,9 +643,9 @@ def validate_solution_response(solution, source_description="uploaded file"):
             solution['steps'] = [
                 {
                     "step_number": 1,
-                    "action": "Analysis Required",
-                    "explanation": "The AI detected a problem but couldn't generate detailed steps. Please try again or enter the problem manually.",
-                    "result": "Try the text input mode for better results"
+                    "action": "Processing Issue",
+                    "explanation": f"The AI could not generate a proper solution. Extracted content: {source_description[:200] if len(source_description) > 50 else source_description}",
+                    "result": "Please try typing the problem manually"
                 }
             ]
     else:
@@ -662,18 +662,20 @@ def validate_solution_response(solution, source_description="uploaded file"):
                 step['step_number'] = step.get('step_number', i + 1)
                 step['action'] = step.get('action', 'Step')
                 step['explanation'] = step.get('explanation', '')
-                step['result'] = step.get('result', '')
+                # Clean up N/A in results
+                result = step.get('result', '')
+                step['result'] = result if is_valid_answer(result) else ''
     
-    # Ensure final_answer exists
-    if not solution.get('final_answer'):
+    # Ensure final_answer exists and is valid
+    if not is_valid_answer(solution.get('final_answer')):
         # Try to get it from the last step
-        if solution['steps'] and solution['steps'][-1].get('result'):
+        if solution['steps'] and is_valid_answer(solution['steps'][-1].get('result')):
             solution['final_answer'] = solution['steps'][-1]['result']
         else:
-            solution['final_answer'] = "See steps above for the solution"
+            solution['final_answer'] = "Unable to determine - please try entering the problem as text"
     
     # Ensure verification exists
-    if not solution.get('verification'):
+    if not solution.get('verification') or solution.get('verification') == 'N/A':
         solution['verification'] = "Verify by substituting the answer back into the original problem"
     
     return solution
@@ -953,53 +955,65 @@ def solve_from_file():
             # Process PDF file
             text_content, page_images = extract_text_from_pdf(file_data)
             
-            # Clean up the extracted text (remove excessive whitespace, page markers)
+            # Clean up the extracted text
             if text_content:
-                # Remove page markers and clean up
                 text_content = re.sub(r'---\s*Page\s*\d+\s*---', '\n', text_content)
-                text_content = re.sub(r'\n{3,}', '\n\n', text_content)  # Remove excessive newlines
+                text_content = re.sub(r'\n{3,}', '\n\n', text_content)
                 text_content = text_content.strip()
             
             solution = None
             
-            # First try with images if available (better for math with symbols/diagrams)
-            if page_images:
+            # Log what we extracted for debugging
+            print(f"PDF text extracted ({len(text_content) if text_content else 0} chars): {text_content[:200] if text_content else 'NONE'}...")
+            print(f"PDF images extracted: {len(page_images)}")
+            
+            # PRIORITY 1: Try text-based approach first (more reliable for math)
+            if text_content and len(text_content.strip()) > 10:
                 try:
-                    context_prompt = f"Solve this math problem. PDF text for reference: {text_content[:500] if text_content else 'N/A'}"
+                    print("Trying text-based PDF solving...")
+                    pdf_prompt = f"{text_content}\n\n{additional_context}" if additional_context else text_content
+                    
+                    solution = call_gemini(pdf_prompt, PDF_TEXT_SOLVER_PROMPT, api_key)
+                    print(f"Text-based result: {solution}")
+                    
+                    # Check if we got a real answer
+                    if solution and solution.get('final_answer') and solution['final_answer'] not in ['N/A', '', 'See steps above for the solution', 'Unable to determine final answer']:
+                        solution = validate_solution_response(solution, "PDF text analysis")
+                    else:
+                        print("Text-based returned invalid answer, will try image...")
+                        solution = None
+                        
+                except Exception as text_error:
+                    print(f"Text-based PDF solving failed: {text_error}")
+                    solution = None
+            
+            # PRIORITY 2: Try image-based if text failed or no good text
+            if not solution and page_images:
+                try:
+                    print("Trying image-based PDF solving...")
+                    img_prompt = "Solve the math problem shown in this image step by step."
+                    if text_content:
+                        img_prompt += f" The text reads: {text_content[:300]}"
                     if additional_context:
-                        context_prompt += f"\n\nUser context: {additional_context}"
+                        img_prompt += f" {additional_context}"
                     
                     solution = call_gemini_with_image(
-                        page_images[:2],
-                        context_prompt,
+                        page_images[0],  # Just use first page
+                        img_prompt,
                         FILE_SOLVER_SYSTEM_PROMPT,
                         api_key
                     )
-                    solution = validate_solution_response(solution, "PDF analysis")
+                    print(f"Image-based result: {solution}")
+                    solution = validate_solution_response(solution, "PDF image analysis")
                 except Exception as img_error:
                     print(f"Image-based PDF solving failed: {img_error}")
-                    solution = None
             
-            # Fallback to text-based if image-based failed or no images
-            if (not solution or not solution.get('final_answer') or solution.get('final_answer') == 'See steps above for the solution') and text_content and len(text_content.strip()) > 20:
-                try:
-                    # Create a specific prompt for PDF math problems
-                    pdf_prompt = f"""PDF Content:
-{text_content}
-
-{f'Additional context: {additional_context}' if additional_context else ''}"""
-                    
-                    solution = call_gemini(pdf_prompt, PDF_TEXT_SOLVER_PROMPT, api_key)
-                    solution = validate_solution_response(solution, text_content[:100])
-                    
-                except Exception as text_error:
-                    print(f"Text-based PDF solving failed: {text_error}")
-            
-            # If we still don't have a solution, return an error
+            # Final check
             if not solution:
                 return jsonify({
-                    "error": "Could not extract content from PDF. Please ensure the PDF is not password-protected and contains readable content.",
-                    "hint": "Try taking a screenshot of the problem instead."
+                    "error": "Could not solve the problem from this PDF.",
+                    "hint": "Try typing the problem manually or uploading a clearer image.",
+                    "extracted_text": text_content[:500] if text_content else "No text found"
                 }), 400
         
         elif file_ext in ['docx', 'doc']:
