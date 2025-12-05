@@ -464,16 +464,20 @@ Design Philosophy:
          * @param {string} className - Additional CSS classes
          */
         const MathText = ({ text, className = '' }) => {
-            const containerRef = useRef(null);
-            const [rendered, setRendered] = useState(false);
+            const [html, setHtml] = useState('');
             
             useEffect(() => {
-                if (!containerRef.current || !text) return;
+                if (!text) {
+                    setHtml('');
+                    return;
+                }
                 
                 // Check if KaTeX is loaded
                 if (typeof window.katex === 'undefined') {
-                    // KaTeX not loaded, just show plain text
-                    containerRef.current.textContent = text;
+                    // KaTeX not loaded, just show plain text (escaped)
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    setHtml(div.innerHTML);
                     return;
                 }
                 
@@ -547,12 +551,193 @@ Design Philosophy:
                 // Convert newlines to <br> for better formatting
                 processedHtml = processedHtml.replace(/\n/g, '<br>');
                 
-                containerRef.current.innerHTML = processedHtml;
-                setRendered(true);
+                setHtml(processedHtml);
             }, [text]);
             
-            // Show plain text initially, will be replaced by KaTeX-rendered content
-            return <span ref={containerRef} className={`math-content ${className}`}>{!rendered ? text : null}</span>;
+            // Use dangerouslySetInnerHTML for reliable rendering
+            return <span className={`math-content ${className}`} dangerouslySetInnerHTML={{ __html: html || text || '' }} />;
+        };
+        
+        // =======================================================================
+        // MATH SYMBOLS DATA
+        // =======================================================================
+        const MATH_SYMBOLS = {
+            basic: [
+                { symbol: '+', label: 'Plus', insert: '+' },
+                { symbol: '−', label: 'Minus', insert: '-' },
+                { symbol: '×', label: 'Times', insert: '*' },
+                { symbol: '÷', label: 'Divide', insert: '/' },
+                { symbol: '=', label: 'Equals', insert: '=' },
+                { symbol: '≠', label: 'Not equal', insert: '≠' },
+                { symbol: '±', label: 'Plus-minus', insert: '±' },
+                { symbol: '∓', label: 'Minus-plus', insert: '∓' },
+            ],
+            compare: [
+                { symbol: '<', label: 'Less than', insert: '<' },
+                { symbol: '>', label: 'Greater than', insert: '>' },
+                { symbol: '≤', label: 'Less or equal', insert: '≤' },
+                { symbol: '≥', label: 'Greater or equal', insert: '≥' },
+                { symbol: '≈', label: 'Approximately', insert: '≈' },
+                { symbol: '∝', label: 'Proportional', insert: '∝' },
+            ],
+            algebra: [
+                { symbol: 'x²', label: 'Squared', insert: '^2' },
+                { symbol: 'x³', label: 'Cubed', insert: '^3' },
+                { symbol: 'xⁿ', label: 'Power', insert: '^n' },
+                { symbol: '√', label: 'Square root', insert: '√(' },
+                { symbol: '∛', label: 'Cube root', insert: '∛(' },
+                { symbol: '|x|', label: 'Absolute value', insert: '|' },
+                { symbol: '∞', label: 'Infinity', insert: '∞' },
+                { symbol: '()', label: 'Parentheses', insert: '()' },
+            ],
+            calculus: [
+                { symbol: '∫', label: 'Integral', insert: '∫' },
+                { symbol: '∬', label: 'Double integral', insert: '∬' },
+                { symbol: '∂', label: 'Partial', insert: '∂' },
+                { symbol: 'd/dx', label: 'Derivative', insert: 'd/dx ' },
+                { symbol: 'lim', label: 'Limit', insert: 'lim ' },
+                { symbol: '∑', label: 'Sum', insert: '∑' },
+                { symbol: '∏', label: 'Product', insert: '∏' },
+                { symbol: 'Δ', label: 'Delta', insert: 'Δ' },
+            ],
+            trig: [
+                { symbol: 'sin', label: 'Sine', insert: 'sin(' },
+                { symbol: 'cos', label: 'Cosine', insert: 'cos(' },
+                { symbol: 'tan', label: 'Tangent', insert: 'tan(' },
+                { symbol: 'π', label: 'Pi', insert: 'π' },
+                { symbol: 'θ', label: 'Theta', insert: 'θ' },
+                { symbol: '°', label: 'Degree', insert: '°' },
+                { symbol: 'rad', label: 'Radians', insert: ' rad' },
+            ],
+            greek: [
+                { symbol: 'α', label: 'Alpha', insert: 'α' },
+                { symbol: 'β', label: 'Beta', insert: 'β' },
+                { symbol: 'γ', label: 'Gamma', insert: 'γ' },
+                { symbol: 'δ', label: 'Delta', insert: 'δ' },
+                { symbol: 'ε', label: 'Epsilon', insert: 'ε' },
+                { symbol: 'λ', label: 'Lambda', insert: 'λ' },
+                { symbol: 'μ', label: 'Mu', insert: 'μ' },
+                { symbol: 'σ', label: 'Sigma', insert: 'σ' },
+                { symbol: 'φ', label: 'Phi', insert: 'φ' },
+                { symbol: 'ω', label: 'Omega', insert: 'ω' },
+            ],
+            sets: [
+                { symbol: '∈', label: 'Element of', insert: '∈' },
+                { symbol: '∉', label: 'Not element of', insert: '∉' },
+                { symbol: '⊂', label: 'Subset', insert: '⊂' },
+                { symbol: '⊆', label: 'Subset or equal', insert: '⊆' },
+                { symbol: '∪', label: 'Union', insert: '∪' },
+                { symbol: '∩', label: 'Intersection', insert: '∩' },
+                { symbol: '∅', label: 'Empty set', insert: '∅' },
+                { symbol: 'ℝ', label: 'Real numbers', insert: 'ℝ' },
+            ],
+            fractions: [
+                { symbol: '½', label: 'One half', insert: '1/2' },
+                { symbol: '⅓', label: 'One third', insert: '1/3' },
+                { symbol: '¼', label: 'One quarter', insert: '1/4' },
+                { symbol: '⅔', label: 'Two thirds', insert: '2/3' },
+                { symbol: '¾', label: 'Three quarters', insert: '3/4' },
+            ],
+        };
+        
+        // Symbol categories for the palette
+        const SYMBOL_CATEGORIES = [
+            { key: 'basic', label: 'Basic', icon: '+-' },
+            { key: 'compare', label: 'Compare', icon: '≤≥' },
+            { key: 'algebra', label: 'Algebra', icon: 'x²' },
+            { key: 'calculus', label: 'Calculus', icon: '∫' },
+            { key: 'trig', label: 'Trig', icon: 'sin' },
+            { key: 'greek', label: 'Greek', icon: 'αβ' },
+            { key: 'sets', label: 'Sets', icon: '∈' },
+            { key: 'fractions', label: 'Fractions', icon: '½' },
+        ];
+        
+        // =======================================================================
+        // MATH SYMBOL PALETTE COMPONENT
+        // =======================================================================
+        /**
+         * MathSymbolPalette - A toggleable panel with clickable math symbols
+         * 
+         * @param {function} onInsert - Callback when a symbol is clicked
+         * @param {boolean} isOpen - Whether the palette is visible
+         * @param {function} onToggle - Callback to toggle visibility
+         */
+        const MathSymbolPalette = ({ onInsert, isOpen, onToggle }) => {
+            const [activeCategory, setActiveCategory] = useState('basic');
+            
+            return (
+                <div className="mt-4">
+                    {/* Toggle Button */}
+                    <button
+                        onClick={onToggle}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-display font-medium transition-all ${
+                            isOpen 
+                                ? 'bg-tutor-100 text-tutor-700 border border-tutor-300' 
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
+                        }`}
+                    >
+                        <span className="text-lg">∑</span>
+                        Math Symbols
+                        <svg 
+                            className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            strokeWidth="2"
+                        >
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    
+                    {/* Symbol Palette Panel */}
+                    {isOpen && (
+                        <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200 animate-fade-in">
+                            {/* Category Tabs */}
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {SYMBOL_CATEGORIES.map((cat) => (
+                                    <button
+                                        key={cat.key}
+                                        onClick={() => setActiveCategory(cat.key)}
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-display font-medium transition-all ${
+                                            activeCategory === cat.key
+                                                ? 'bg-tutor-500 text-white'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        <span className="mr-1">{cat.icon}</span>
+                                        {cat.label}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            {/* Symbols Grid */}
+                            <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
+                                {MATH_SYMBOLS[activeCategory].map((item, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => onInsert(item.insert)}
+                                        className="w-10 h-10 rounded-lg bg-white border border-gray-200
+                                                 flex items-center justify-center text-lg
+                                                 text-gray-700 font-medium
+                                                 hover:bg-tutor-50 hover:border-tutor-300 hover:text-tutor-700
+                                                 transition-all active:scale-95"
+                                        title={item.label}
+                                    >
+                                        {item.symbol}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            {/* Quick Tips */}
+                            <div className="mt-4 pt-3 border-t border-gray-200">
+                                <p className="text-xs text-gray-500">
+                                    <strong>Tip:</strong> Click a symbol to insert it at your cursor position, or type math directly (e.g., x^2 for x²)
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
         };
         
         // =======================================================================
@@ -951,6 +1136,26 @@ Design Philosophy:
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState(null);
             const [inputMode, setInputMode] = useState('text'); // 'text' or 'file'
+            const [showSymbolPalette, setShowSymbolPalette] = useState(false);
+            const textareaRef = useRef(null);
+            
+            // Insert symbol at cursor position in textarea
+            const insertSymbol = (symbol) => {
+                if (!textareaRef.current) return;
+                
+                const textarea = textareaRef.current;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const newText = problem.substring(0, start) + symbol + problem.substring(end);
+                
+                setProblem(newText);
+                
+                // Set cursor position after inserted symbol
+                setTimeout(() => {
+                    textarea.focus();
+                    textarea.selectionStart = textarea.selectionEnd = start + symbol.length;
+                }, 0);
+            };
             
             const exampleProblems = [
                 "Solve for x: 2x + 5 = 13", "Find the derivative of f(x) = x³ + 2x² - 5x + 3",
@@ -1048,12 +1253,22 @@ Design Philosophy:
                         {inputMode === 'text' && (
                             <>
                                 <div className="relative">
-                                    <textarea value={problem} onChange={(e) => setProblem(e.target.value)}
+                                    <textarea 
+                                        ref={textareaRef}
+                                        value={problem} 
+                                        onChange={(e) => setProblem(e.target.value)}
                                         onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSolve(); }}}
                                         placeholder="Example: Solve for x: 2x + 5 = 13"
                                         className="w-full h-32 p-4 text-lg border-2 border-tutor-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all resize-none input-focus placeholder:text-gray-400"/>
                                     <span className="absolute bottom-3 right-3 text-sm text-gray-400">{problem.length} characters</span>
                                 </div>
+                                
+                                {/* Math Symbol Palette */}
+                                <MathSymbolPalette 
+                                    onInsert={insertSymbol}
+                                    isOpen={showSymbolPalette}
+                                    onToggle={() => setShowSymbolPalette(!showSymbolPalette)}
+                                />
                                 
                                 <div className="mt-4">
                                     <p className="text-sm text-gray-500 mb-3 font-display font-medium">Try an example:</p>
