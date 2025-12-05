@@ -145,51 +145,17 @@ You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exac
 Always be encouraging and educational. Remember, the goal is to help students LEARN, not just get answers."""
 
 # System prompt for solving problems from images/files
-FILE_SOLVER_SYSTEM_PROMPT = """You are an expert math tutor helping students understand mathematical concepts.
-You are analyzing a math problem from an uploaded file (image, PDF, or document).
+FILE_SOLVER_SYSTEM_PROMPT = """You are an expert math tutor. Analyze the uploaded image/document and solve any math problems you find.
 
-Your task:
-1. Carefully examine the uploaded content for any mathematical problems
-2. If you find math problems, identify and solve them step-by-step
-3. If the image/document contains multiple problems, focus on the most prominent one or solve all if possible
-4. If the content is unclear or not a math problem, explain what you see and ask for clarification
+IMPORTANT: You must respond with ONLY valid JSON, no other text. Do not include markdown formatting or code blocks.
 
-When solving problems:
-1. First, identify what type of problem it is (algebra, calculus, geometry, trigonometry, etc.)
-2. List any relevant formulas or theorems that will be used
-3. Show each step clearly with explanations of WHY each step is taken
-4. Use proper mathematical notation
-5. Provide the final answer clearly marked
-6. If applicable, verify the answer or explain how to check it
+If you find a math problem, respond with this exact JSON structure:
+{"problem_detected": "describe the problem you found", "problem_type": "algebra/geometry/calculus/etc", "concepts": ["concept1", "concept2"], "steps": [{"step_number": 1, "action": "what you did", "explanation": "why", "result": "the result"}], "final_answer": "the answer", "verification": "how to check"}
 
-You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
-{
-    "problem_detected": "Description of the problem found in the file",
-    "problem_type": "The category of math problem",
-    "concepts": ["List of mathematical concepts used"],
-    "steps": [
-        {
-            "step_number": 1,
-            "action": "What is being done in this step",
-            "explanation": "Why this step is necessary",
-            "result": "The mathematical result of this step"
-        }
-    ],
-    "final_answer": "The final answer to the problem",
-    "verification": "How to verify the answer (if applicable)"
-}
+If you cannot find a math problem, respond with:
+{"problem_detected": "No math problem found", "problem_type": "N/A", "concepts": [], "steps": [], "final_answer": "Could not identify a math problem in this file", "verification": "N/A"}
 
-If NO math problem is found, respond with:
-{
-    "problem_detected": "No math problem found",
-    "problem_type": "N/A",
-    "concepts": [],
-    "steps": [],
-    "final_answer": "Unable to identify a math problem in the uploaded file. Please ensure the file contains a clear mathematical problem.",
-    "verification": "N/A"
-}
-
-Always be encouraging and educational."""
+Remember: Return ONLY the JSON object, nothing else."""
 
 # System prompt for generating quiz questions
 QUIZ_SYSTEM_PROMPT = """You are an expert math tutor creating practice problems for students.
@@ -264,9 +230,16 @@ def clean_json_response(text):
     Returns:
         Cleaned JSON string
     """
+    if not text:
+        return "{}"
+    
     # Remove markdown code blocks if present
     text = re.sub(r'```json\s*', '', text)
     text = re.sub(r'```\s*', '', text)
+    text = re.sub(r'```', '', text)
+    
+    # Remove any leading/trailing whitespace
+    text = text.strip()
     
     # Try to find JSON object in the text
     start = text.find('{')
@@ -274,6 +247,9 @@ def clean_json_response(text):
     
     if start != -1 and end != -1:
         text = text[start:end + 1]
+    else:
+        # If no JSON found, return a default error response
+        return '{"error": "No valid JSON found in response"}'
     
     return text.strip()
 
@@ -488,30 +464,59 @@ def call_gemini_with_image(images, prompt, system_prompt, api_key):
     # Initialize the Gemini model with vision capabilities
     model = genai.GenerativeModel('gemini-2.0-flash')
     
-    # Prepare content parts
+    # Prepare content parts - images first, then text
     content_parts = []
     
-    # Add system prompt and user prompt as text
-    full_prompt = f"{system_prompt}\n\nAdditional context from user: {prompt}" if prompt else system_prompt
-    content_parts.append(full_prompt)
-    
-    # Add images
+    # Add images first (Gemini works better with images before text)
     if isinstance(images, list):
-        for img in images[:5]:  # Limit to first 5 images
+        for img in images[:3]:  # Limit to first 3 images for reliability
             content_parts.append(img)
     else:
         content_parts.append(images)
     
+    # Add system prompt and user prompt as text
+    full_prompt = system_prompt
+    if prompt:
+        full_prompt += f"\n\nAdditional context from user: {prompt}"
+    
+    content_parts.append(full_prompt)
+    
     # Generate response from Gemini
-    response = model.generate_content(content_parts)
-    
-    # Extract text from response
-    response_text = response.text
-    
-    # Clean and parse JSON
-    cleaned_text = clean_json_response(response_text)
-    
-    return json.loads(cleaned_text)
+    try:
+        response = model.generate_content(content_parts)
+        
+        # Extract text from response
+        response_text = response.text
+        
+        # Clean and parse JSON
+        cleaned_text = clean_json_response(response_text)
+        
+        try:
+            return json.loads(cleaned_text)
+        except json.JSONDecodeError as e:
+            # If JSON parsing fails, try to construct a response from the text
+            print(f"JSON parse error: {e}")
+            print(f"Raw response: {response_text[:500]}...")
+            
+            # Return a structured response with the raw text
+            return {
+                "problem_detected": "Problem analyzed from uploaded file",
+                "problem_type": "Mathematical Problem",
+                "concepts": [],
+                "steps": [
+                    {
+                        "step_number": 1,
+                        "action": "Analysis",
+                        "explanation": response_text,
+                        "result": "See explanation above"
+                    }
+                ],
+                "final_answer": "Please see the step-by-step explanation above",
+                "verification": "N/A"
+            }
+    except Exception as e:
+        print(f"Gemini API error: {e}")
+        raise
 
 
 # =============================================================================
@@ -787,19 +792,39 @@ def solve_from_file():
             # Process PDF file
             text_content, page_images = extract_text_from_pdf(file_data)
             
-            if page_images:
-                # Use images for visual analysis (better for math problems with diagrams)
+            # First try text-based analysis if we have good text content
+            if text_content and len(text_content.strip()) > 50 and "Error" not in text_content:
+                try:
+                    # Try text-based solving first (more reliable for text-heavy PDFs)
+                    solution = call_gemini(
+                        f"The following content was extracted from a PDF file. Please identify and solve any math problems:\n\n{text_content}\n\nAdditional context: {additional_context}",
+                        SOLVER_SYSTEM_PROMPT,
+                        api_key
+                    )
+                    # Add indicator that this was from PDF text
+                    solution['problem_detected'] = solution.get('problem_detected', f"Problem extracted from PDF text")
+                except Exception as text_error:
+                    print(f"Text-based PDF solving failed: {text_error}")
+                    # Fall through to image-based processing
+                    solution = None
+                
+                if solution:
+                    # Text-based solution worked
+                    pass
+                elif page_images:
+                    # Fallback to image-based analysis
+                    solution = call_gemini_with_image(
+                        page_images[:2],  # Limit to first 2 pages
+                        f"Extracted text for reference:\n{text_content[:1000]}\n\nAdditional context: {additional_context}",
+                        FILE_SOLVER_SYSTEM_PROMPT,
+                        api_key
+                    )
+            elif page_images:
+                # No good text, use images for visual analysis
                 solution = call_gemini_with_image(
-                    page_images,
-                    f"Extracted text for reference:\n{text_content}\n\nAdditional context: {additional_context}",
+                    page_images[:2],  # Limit to first 2 pages
+                    additional_context,
                     FILE_SOLVER_SYSTEM_PROMPT,
-                    api_key
-                )
-            elif text_content:
-                # Fallback to text-only analysis
-                solution = call_gemini(
-                    f"The following math problem was extracted from a PDF file:\n\n{text_content}\n\nAdditional context: {additional_context}",
-                    SOLVER_SYSTEM_PROMPT,
                     api_key
                 )
             else:
@@ -837,10 +862,24 @@ def solve_from_file():
         return jsonify(solution)
         
     except json.JSONDecodeError as je:
+        # Return a helpful response instead of an error for file uploads
+        print(f"JSON decode error in solve_from_file: {je}")
         return jsonify({
-            "error": "Failed to parse AI response. Please try again.",
-            "details": str(je)
-        }), 500
+            "problem_detected": "Problem analyzed from file (response format issue)",
+            "problem_type": "File Analysis",
+            "concepts": [],
+            "steps": [
+                {
+                    "step_number": 1,
+                    "action": "Analysis Issue",
+                    "explanation": "The AI analyzed your file but returned a response in an unexpected format. This can happen with complex PDFs or low-quality images.",
+                    "result": "Please try again or use a clearer image"
+                }
+            ],
+            "final_answer": "Unable to parse the solution. Please try uploading a clearer image or typing the problem manually.",
+            "verification": "Try using the text input mode for best results",
+            "source_file": {"filename": "uploaded file", "type": "unknown", "size_bytes": 0}
+        })
         
     except ValueError as ve:
         return jsonify({
