@@ -1,63 +1,67 @@
 <!--
-================================================================================
-AI Math Tutor - Frontend Application
-================================================================================
-Student: Aric Hurkman
-Course: CSCI 250
-Final Project: AI Math Tutor
-Professor: Gheni Abla
-
-This is the main frontend for the AI Math Tutor application.
-It provides a web-based interface for:
-1. Google Sign-In authentication
-2. User-provided Gemini API key management
-3. Inputting and solving math problems with AI-powered step-by-step solutions
-4. FILE UPLOAD: Upload images (.png, .jpg, .jpeg, .gif, .webp), PDFs, and DOCX files
-5. STUDY MODE: Interactive guided learning with hints and step-by-step collaboration
-6. Taking quizzes to practice and test mathematical understanding
-7. Tracking quiz performance and progress
-
-Technologies used:
-- React 18: Frontend framework for building the UI
-- Tailwind CSS: Utility-first CSS framework for styling
-- Lucide React: Icon library for UI elements
-- Google Identity Services: OAuth 2.0 authentication
-- KaTeX: Mathematical notation rendering
-
-Design Philosophy:
-- Modern educational aesthetic with warm, inviting colors
-- Clean typography optimized for readability
-- Interactive elements with smooth animations
-- Mobile-responsive layout
-- Drag-and-drop file upload support
-================================================================================
--->
+    ================================================================================
+    AI Math Tutor - Frontend Application
+    ================================================================================
+    Student: Aric Hurkman
+    Course: CSCI 250
+    Final Project: AI Math Tutor
+    Professor: Gheni Abla
+    
+    This is the main frontend for the AI Math Tutor application.
+    It provides a web-based interface for:
+    1. Google Sign-In authentication
+    2. User-provided Gemini API key management
+    3. Inputting and solving math problems with AI-powered step-by-step solutions
+    4. FILE UPLOAD: Upload images (.png, .jpg, .jpeg, .gif, .webp), PDFs, and DOCX files
+    5. STUDY MODE: Interactive guided learning with hints and step-by-step collaboration
+    6. Taking quizzes to practice and test mathematical understanding
+    7. Tracking quiz performance and progress
+    
+    Technologies used:
+    - React 18: Frontend framework for building the UI
+    - Tailwind CSS: Utility-first CSS framework for styling
+    - Lucide React: Icon library for UI elements
+    - Google Identity Services: OAuth 2.0 authentication
+    - KaTeX: Mathematical notation rendering
+    
+    Design Philosophy:
+    - Modern educational aesthetic with warm, inviting colors
+    - Clean typography optimized for readability
+    - Interactive elements with smooth animations
+    - Mobile-responsive layout
+    - Drag-and-drop file upload support
+    ================================================================================
+    -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Math Tutor | Learn Mathematics Step-by-Step</title>
-    
+
     <!-- Favicon using mathematical symbol -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
-    
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
+
     <!-- Tailwind CSS for utility-first styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&amp;display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&amp;display=swap"
+        rel="stylesheet">
+
     <!-- KaTeX for mathematical notation rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-    
+
     <!-- Google Identity Services for OAuth 2.0 Sign-In -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
+
     <!-- Tailwind Configuration -->
     <script>
         tailwind.config = {
@@ -103,106 +107,194 @@ Design Philosophy:
             }
         }
     </script>
-    
+
     <!-- Custom CSS Styles -->
     <style>
-        body { font-family: 'Source Serif 4', Georgia, serif; background-color: #faf8f5; }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f5f0e8; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #14b8a6; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #0d9488; }
-        .math-content { font-family: 'Source Serif 4', Georgia, serif; line-height: 1.8; }
-        .step-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .step-card:hover { transform: translateX(8px); box-shadow: -4px 0 0 #14b8a6; }
-        .spinner { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        body {
+            font-family: 'Source Serif 4', Georgia, serif;
+            background-color: #faf8f5;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f5f0e8;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #14b8a6;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0d9488;
+        }
+
+        .math-content {
+            font-family: 'Source Serif 4', Georgia, serif;
+            line-height: 1.8;
+        }
+
+        .step-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .step-card:hover {
+            transform: translateX(8px);
+            box-shadow: -4px 0 0 #14b8a6;
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         .gradient-text {
             background: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #f59e0b 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
+
         .pattern-bg {
             background-image: radial-gradient(circle at 25px 25px, rgba(20, 184, 166, 0.05) 2px, transparent 0),
-                              radial-gradient(circle at 75px 75px, rgba(245, 158, 11, 0.03) 2px, transparent 0);
+                radial-gradient(circle at 75px 75px, rgba(245, 158, 11, 0.03) 2px, transparent 0);
             background-size: 100px 100px;
         }
-        .input-focus { transition: all 0.2s ease; }
-        .input-focus:focus { outline: none; box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.3); }
-        .btn-press:active { transform: scale(0.98); }
-        
+
+        .input-focus {
+            transition: all 0.2s ease;
+        }
+
+        .input-focus:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.3);
+        }
+
+        .btn-press:active {
+            transform: scale(0.98);
+        }
+
         /* File Upload Styles */
         .file-drop-zone {
             border: 2px dashed #99f6e4;
             transition: all 0.3s ease;
         }
-        .file-drop-zone:hover, .file-drop-zone.drag-over {
+
+        .file-drop-zone:hover,
+        .file-drop-zone.drag-over {
             border-color: #14b8a6;
             background-color: #f0fdfa;
         }
+
         .file-drop-zone.drag-over {
             transform: scale(1.01);
             box-shadow: 0 4px 20px rgba(20, 184, 166, 0.15);
         }
+
         .file-preview {
             max-width: 200px;
             max-height: 150px;
             object-fit: contain;
         }
-        
+
         /* Study Mode Styles */
         .study-step-locked {
             opacity: 0.5;
             pointer-events: none;
         }
+
         .study-step-active {
             border-left: 4px solid #a855f7;
             background: linear-gradient(90deg, #faf5ff 0%, transparent 100%);
         }
+
         .study-step-completed {
             border-left: 4px solid #22c55e;
             background: linear-gradient(90deg, #f0fdf4 0%, transparent 100%);
         }
+
         .hint-reveal {
             animation: hintReveal 0.3s ease-out;
         }
+
         @keyframes hintReveal {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Live Preview Styles */
+        .live-preview {
+            background: linear-gradient(135deg, #f0fdfa 0%, #f0fdf4 100%);
+            border: 1px solid #99f6e4;
+            min-height: 60px;
+        }
+
+        .live-preview-study {
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border: 1px solid #e9d5ff;
+        }
+
+        .preview-placeholder {
+            color: #9ca3af;
+            font-style: italic;
         }
     </style>
 </head>
+
 <body class="min-h-screen pattern-bg">
     <div id="root"></div>
-    
+
     <!-- React and Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    
+
     <!-- Main React Application -->
     <script type="text/babel">
         const { useState, useEffect, useCallback, useRef } = React;
-        
+
         // =======================================================================
         // CONFIGURATION
         // =======================================================================
         const API_BASE_URL = '/api';
-        
+
         // Storage keys for local storage
         const STORAGE_KEYS = { USER: 'mathtutor_user', API_KEY: 'mathtutor_api_key' };
-        
+
         // Supported file types for upload
         const SUPPORTED_FILE_TYPES = {
             images: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'],
             documents: ['pdf', 'docx', 'doc']
         };
-        
+
         // Config will be loaded from server
         let APP_CONFIG = {
             google_client_id: '',
             use_google_auth: false
         };
-        
+
         // Fetch configuration from server
         const loadConfig = async () => {
             try {
@@ -214,17 +306,17 @@ Design Philosophy:
                 console.log('Could not load config, using defaults');
             }
         };
-        
+
         // =======================================================================
         // API SERVICE FUNCTIONS
         // =======================================================================
         const getStoredApiKey = () => localStorage.getItem(STORAGE_KEYS.API_KEY);
-        
+
         const getAuthHeaders = () => ({
             'Content-Type': 'application/json',
             'X-API-Key': getStoredApiKey() || ''
         });
-        
+
         const verifyApiKey = async (apiKey) => {
             const response = await fetch(`${API_BASE_URL}/verify-key`, {
                 method: 'POST',
@@ -232,7 +324,7 @@ Design Philosophy:
             });
             return response.json();
         };
-        
+
         const solveProblem = async (problem) => {
             const response = await fetch(`${API_BASE_URL}/solve`, {
                 method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ problem })
@@ -240,7 +332,7 @@ Design Philosophy:
             if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to solve problem'); }
             return response.json();
         };
-        
+
         /**
          * Solve a math problem from an uploaded file (image, PDF, or DOCX)
          * 
@@ -254,31 +346,24 @@ Design Philosophy:
             if (additionalContext) {
                 formData.append('additional_context', additionalContext);
             }
-            
+
             const response = await fetch(`${API_BASE_URL}/solve/file`, {
                 method: 'POST',
                 headers: { 'X-API-Key': getStoredApiKey() || '' },
                 body: formData
             });
-            
+
             if (!response.ok) {
                 const error = await response.json();
                 throw new Error(error.error || 'Failed to solve problem from file');
             }
             return response.json();
         };
-        
+
         // =======================================================================
         // STUDY MODE API FUNCTIONS
         // =======================================================================
-        
-        /**
-         * Start a study session for a math problem
-         * Returns guided steps for the student to work through
-         * 
-         * @param {string} problem - The math problem to study
-         * @returns {Promise<Object>} - Study plan with guided steps
-         */
+
         const startStudySession = async (problem) => {
             const response = await fetch(`${API_BASE_URL}/study/start`, {
                 method: 'POST',
@@ -291,13 +376,7 @@ Design Philosophy:
             }
             return response.json();
         };
-        
-        /**
-         * Check a student's answer for a specific step
-         * 
-         * @param {Object} params - Check parameters
-         * @returns {Promise<Object>} - Evaluation result
-         */
+
         const checkStudyAnswer = async ({ problem, stepNumber, stepObjective, studentAnswer, expectedFormat }) => {
             const response = await fetch(`${API_BASE_URL}/study/check`, {
                 method: 'POST',
@@ -316,13 +395,7 @@ Design Philosophy:
             }
             return response.json();
         };
-        
-        /**
-         * Get a hint for a specific step
-         * 
-         * @param {Object} params - Hint request parameters
-         * @returns {Promise<Object>} - Hint response
-         */
+
         const getStudyHint = async ({ problem, stepNumber, stepObjective, hintLevel, studentAttempt }) => {
             const response = await fetch(`${API_BASE_URL}/study/hint`, {
                 method: 'POST',
@@ -341,7 +414,7 @@ Design Philosophy:
             }
             return response.json();
         };
-        
+
         const generateQuiz = async (topic, numQuestions = 3, difficulty = 'mixed') => {
             const response = await fetch(`${API_BASE_URL}/quiz/generate`, {
                 method: 'POST', headers: getAuthHeaders(),
@@ -350,7 +423,7 @@ Design Philosophy:
             if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to generate quiz'); }
             return response.json();
         };
-        
+
         const evaluateAnswer = async (question, correctAnswer, studentAnswer) => {
             const response = await fetch(`${API_BASE_URL}/quiz/evaluate`, {
                 method: 'POST', headers: getAuthHeaders(),
@@ -359,38 +432,23 @@ Design Philosophy:
             if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to evaluate answer'); }
             return response.json();
         };
-        
+
         // =======================================================================
         // FILE UPLOAD HELPER FUNCTIONS
         // =======================================================================
-        
-        /**
-         * Check if a file type is supported for upload
-         * @param {string} filename - Name of the file
-         * @returns {boolean} - Whether the file type is supported
-         */
+
         const isFileTypeSupported = (filename) => {
             const ext = filename.split('.').pop().toLowerCase();
             return [...SUPPORTED_FILE_TYPES.images, ...SUPPORTED_FILE_TYPES.documents].includes(ext);
         };
-        
-        /**
-         * Get file type category (image or document)
-         * @param {string} filename - Name of the file
-         * @returns {string} - 'image', 'document', or 'unknown'
-         */
+
         const getFileCategory = (filename) => {
             const ext = filename.split('.').pop().toLowerCase();
             if (SUPPORTED_FILE_TYPES.images.includes(ext)) return 'image';
             if (SUPPORTED_FILE_TYPES.documents.includes(ext)) return 'document';
             return 'unknown';
         };
-        
-        /**
-         * Format file size for display
-         * @param {number} bytes - File size in bytes
-         * @returns {string} - Formatted file size
-         */
+
         const formatFileSize = (bytes) => {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -398,7 +456,7 @@ Design Philosophy:
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         };
-        
+
         // =======================================================================
         // REUSABLE UI COMPONENTS
         // =======================================================================
@@ -411,13 +469,13 @@ Design Philosophy:
                 <p className="mt-4 text-tutor-700 font-display font-medium animate-pulse-soft">{message}</p>
             </div>
         );
-        
+
         const ErrorAlert = ({ message, onDismiss }) => (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 animate-slide-up">
                 <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-6 h-6 text-red-500">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                         </svg>
                     </div>
                     <div className="flex-1">
@@ -427,21 +485,21 @@ Design Philosophy:
                     {onDismiss && (
                         <button onClick={onDismiss} className="text-red-400 hover:text-red-600 transition-colors">
                             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
                         </button>
                     )}
                 </div>
             </div>
         );
-        
+
         const TabButton = ({ active, onClick, children, color = 'tutor' }) => {
             const colorClasses = {
                 tutor: active ? 'bg-tutor-600 text-white shadow-lg shadow-tutor-600/30' : 'bg-white text-tutor-700 hover:bg-tutor-50 border border-tutor-200',
                 accent: active ? 'bg-accent-500 text-white shadow-lg shadow-accent-500/30' : 'bg-white text-accent-700 hover:bg-accent-50 border border-accent-200',
                 study: active ? 'bg-study-600 text-white shadow-lg shadow-study-600/30' : 'bg-white text-study-700 hover:bg-study-50 border border-study-200',
             };
-            
+
             return (
                 <button onClick={onClick}
                     className={`px-4 py-2 md:px-6 md:py-3 font-display font-semibold text-sm md:text-lg rounded-xl transition-all duration-300 btn-press ${colorClasses[color]}`}>
@@ -449,115 +507,166 @@ Design Philosophy:
                 </button>
             );
         };
-        
+
         // =======================================================================
         // MATH RENDERING COMPONENT (KaTeX)
         // =======================================================================
-        /**
-         * MathText Component - Renders text with LaTeX math expressions
-         * 
-         * Supports:
-         * - Inline math: $...$  or \(...\)
-         * - Display math: $$...$$ or \[...\]
-         * 
-         * @param {string} text - Text containing LaTeX math expressions
-         * @param {string} className - Additional CSS classes
-         */
         const MathText = ({ text, className = '' }) => {
-            const [html, setHtml] = useState('');
-            
+            const containerRef = useRef(null);
+
             useEffect(() => {
+                if (!containerRef.current) return;
+
+                // Clear previous content
+                containerRef.current.innerHTML = '';
+
                 if (!text) {
-                    setHtml('');
                     return;
                 }
-                
-                // Check if KaTeX is loaded
+
                 if (typeof window.katex === 'undefined') {
-                    // KaTeX not loaded, just show plain text (escaped)
-                    const div = document.createElement('div');
-                    div.textContent = text;
-                    setHtml(div.innerHTML);
+                    containerRef.current.textContent = text;
                     return;
                 }
-                
-                // Process the text to find and render math expressions
-                let processedHtml = text;
-                
-                // First, escape HTML to prevent XSS
-                const escapeHtml = (str) => {
-                    const div = document.createElement('div');
-                    div.textContent = str;
-                    return div.innerHTML;
-                };
-                
-                // Store math expressions temporarily
-                const mathExpressions = [];
-                let mathIndex = 0;
-                
-                // Extract display math first ($$...$$)
-                processedHtml = processedHtml.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
-                    mathExpressions.push({ math: math.trim(), display: true });
-                    return `%%MATH_${mathIndex++}%%`;
-                });
-                
-                // Extract display math (\[...\])
-                processedHtml = processedHtml.replace(/\\\[([\s\S]*?)\\\]/g, (match, math) => {
-                    mathExpressions.push({ math: math.trim(), display: true });
-                    return `%%MATH_${mathIndex++}%%`;
-                });
-                
-                // Extract inline math ($...$) - be careful not to match currency
-                processedHtml = processedHtml.replace(/\$([^\$\n]+?)\$/g, (match, math) => {
-                    // Skip if it looks like currency (e.g., $5.00)
-                    if (/^\d+(\.\d{2})?$/.test(math.trim())) return match;
-                    mathExpressions.push({ math: math.trim(), display: false });
-                    return `%%MATH_${mathIndex++}%%`;
-                });
-                
-                // Extract inline math (\(...\))
-                processedHtml = processedHtml.replace(/\\\(([\s\S]*?)\\\)/g, (match, math) => {
-                    mathExpressions.push({ math: math.trim(), display: false });
-                    return `%%MATH_${mathIndex++}%%`;
-                });
-                
-                // Escape HTML in the non-math parts
-                const parts = processedHtml.split(/(%%MATH_\d+%%)/);
-                processedHtml = parts.map(part => {
-                    if (part.match(/%%MATH_\d+%%/)) return part;
-                    return escapeHtml(part);
-                }).join('');
-                
-                // Now render the math expressions
-                mathExpressions.forEach((expr, i) => {
+
+                // Process the text to find math expressions and render them
+                // Regex to match math expressions: $$...$$, $...$, \[...\], \(...\)
+                const mathRegex = /(\$\$[\s\S]*?\$\$|\$[^\$\n]+?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g;
+
+                let lastIndex = 0;
+                let match;
+                const fragment = document.createDocumentFragment();
+
+                while ((match = mathRegex.exec(text)) !== null) {
+                    // Add text before the match
+                    if (match.index > lastIndex) {
+                        const textBefore = text.substring(lastIndex, match.index);
+                        // Handle newlines in text
+                        const parts = textBefore.split('\n');
+                        parts.forEach((part, i) => {
+                            if (part) {
+                                fragment.appendChild(document.createTextNode(part));
+                            }
+                            if (i < parts.length - 1) {
+                                fragment.appendChild(document.createElement('br'));
+                            }
+                        });
+                    }
+
+                    // Extract the math content (remove delimiters)
+                    let mathContent = match[0];
+                    let displayMode = false;
+
+                    if (mathContent.startsWith('$$') && mathContent.endsWith('$$')) {
+                        mathContent = mathContent.slice(2, -2).trim();
+                        displayMode = true;
+                    } else if (mathContent.startsWith('\\[') && mathContent.endsWith('\\]')) {
+                        mathContent = mathContent.slice(2, -2).trim();
+                        displayMode = true;
+                    } else if (mathContent.startsWith('$') && mathContent.endsWith('$')) {
+                        mathContent = mathContent.slice(1, -1).trim();
+                        // Skip if it looks like currency (e.g., $5.00)
+                        if (/^\d+(\.\d{2})?$/.test(mathContent)) {
+                            fragment.appendChild(document.createTextNode(match[0]));
+                            lastIndex = mathRegex.lastIndex;
+                            continue;
+                        }
+                    } else if (mathContent.startsWith('\\(') && mathContent.endsWith('\\)')) {
+                        mathContent = mathContent.slice(2, -2).trim();
+                    }
+
+                    // Create a span for the math and render directly into it
+                    const mathSpan = document.createElement('span');
+
                     try {
-                        const renderedMath = window.katex.renderToString(expr.math, {
-                            displayMode: expr.display,
+                        // Use katex.render() for direct DOM insertion (this is what works!)
+                        window.katex.render(mathContent, mathSpan, {
+                            displayMode: displayMode,
                             throwOnError: false,
                             errorColor: '#cc0000',
                             strict: false,
                             trust: true
                         });
-                        processedHtml = processedHtml.replace(`%%MATH_${i}%%`, renderedMath);
                     } catch (e) {
-                        // If KaTeX fails, show the original expression
-                        processedHtml = processedHtml.replace(
-                            `%%MATH_${i}%%`, 
-                            `<code class="text-red-500">${escapeHtml(expr.math)}</code>`
-                        );
+                        // Fallback for errors
+                        mathSpan.textContent = mathContent;
+                        mathSpan.style.color = '#cc0000';
+                        mathSpan.style.fontFamily = 'monospace';
                     }
-                });
-                
-                // Convert newlines to <br> for better formatting
-                processedHtml = processedHtml.replace(/\n/g, '<br>');
-                
-                setHtml(processedHtml);
+
+                    fragment.appendChild(mathSpan);
+                    lastIndex = mathRegex.lastIndex;
+                }
+
+                // Add any remaining text after the last match
+                if (lastIndex < text.length) {
+                    const textAfter = text.substring(lastIndex);
+                    const parts = textAfter.split('\n');
+                    parts.forEach((part, i) => {
+                        if (part) {
+                            fragment.appendChild(document.createTextNode(part));
+                        }
+                        if (i < parts.length - 1) {
+                            fragment.appendChild(document.createElement('br'));
+                        }
+                    });
+                }
+
+                containerRef.current.appendChild(fragment);
             }, [text]);
-            
-            // Use dangerouslySetInnerHTML for reliable rendering
-            return <span className={`math-content ${className}`} dangerouslySetInnerHTML={{ __html: html || text || '' }} />;
+
+            return <span ref={containerRef} className={`math-content ${className}`} />;
         };
-        
+
+        // =======================================================================
+        // LIVE LATEX PREVIEW COMPONENT
+        // =======================================================================
+        /**
+         * LiveLatexPreview - Shows a real-time rendered preview of LaTeX math
+         * 
+         * @param {string} text - The raw text containing LaTeX expressions
+         * @param {boolean} isVisible - Whether to show the preview
+         * @param {string} variant - 'solver' or 'study' for different styling
+         * @param {string} placeholder - Placeholder text when empty
+         */
+        const LiveLatexPreview = ({ text, isVisible, variant = 'solver', placeholder = 'Your math will appear here as you type...' }) => {
+            if (!isVisible) return null;
+
+            const variantClasses = {
+                solver: 'live-preview',
+                study: 'live-preview live-preview-study'
+            };
+
+            const hasContent = text && text.trim().length > 0;
+
+            return (
+                <div className={`mt-4 rounded-xl p-4 ${variantClasses[variant]} animate-fade-in`}>
+                    <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-4 h-4 text-tutor-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <span className="text-sm font-display font-medium text-tutor-700">Live Preview</span>
+                    </div>
+                    <div className="min-h-[40px] flex items-center">
+                        {hasContent ? (
+                            <div className="text-lg">
+                                <MathText text={text} />
+                            </div>
+                        ) : (
+                            <span className="preview-placeholder">{placeholder}</span>
+                        )}
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-tutor-200/50">
+                        <p className="text-xs text-gray-500">
+                            <strong>Tip:</strong> Use <code className="bg-gray-100 px-1 rounded">$...$</code> for inline math (e.g., <code className="bg-gray-100 px-1 rounded">$x^2$</code>)
+                            or <code className="bg-gray-100 px-1 rounded">$$...$$</code> for display math
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
         // =======================================================================
         // MATH SYMBOLS DATA
         // =======================================================================
@@ -638,9 +747,16 @@ Design Philosophy:
                 { symbol: '⅔', label: 'Two thirds', insert: '2/3' },
                 { symbol: '¾', label: 'Three quarters', insert: '3/4' },
             ],
+            latex: [
+                { symbol: '\\frac{}{}', label: 'Fraction', insert: '\\frac{}{} ' },
+                { symbol: '\\sqrt{}', label: 'Square root', insert: '\\sqrt{} ' },
+                { symbol: '\\int', label: 'Integral', insert: '\\int ' },
+                { symbol: '\\sum', label: 'Sum', insert: '\\sum ' },
+                { symbol: '\\lim', label: 'Limit', insert: '\\lim_{} ' },
+                { symbol: '\\infty', label: 'Infinity', insert: '\\infty ' },
+            ],
         };
-        
-        // Symbol categories for the palette
+
         const SYMBOL_CATEGORIES = [
             { key: 'basic', label: 'Basic', icon: '+-' },
             { key: 'compare', label: 'Compare', icon: '≤≥' },
@@ -650,88 +766,75 @@ Design Philosophy:
             { key: 'greek', label: 'Greek', icon: 'αβ' },
             { key: 'sets', label: 'Sets', icon: '∈' },
             { key: 'fractions', label: 'Fractions', icon: '½' },
+            { key: 'latex', label: 'LaTeX', icon: '\\x' },
         ];
-        
+
         // =======================================================================
         // MATH SYMBOL PALETTE COMPONENT
         // =======================================================================
-        /**
-         * MathSymbolPalette - A toggleable panel with clickable math symbols
-         * 
-         * @param {function} onInsert - Callback when a symbol is clicked
-         * @param {boolean} isOpen - Whether the palette is visible
-         * @param {function} onToggle - Callback to toggle visibility
-         */
         const MathSymbolPalette = ({ onInsert, isOpen, onToggle }) => {
             const [activeCategory, setActiveCategory] = useState('basic');
-            
+
             return (
                 <div className="mt-4">
-                    {/* Toggle Button */}
                     <button
                         onClick={onToggle}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-display font-medium transition-all ${
-                            isOpen 
-                                ? 'bg-tutor-100 text-tutor-700 border border-tutor-300' 
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-display font-medium transition-all ${isOpen
+                                ? 'bg-tutor-100 text-tutor-700 border border-tutor-300'
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
-                        }`}
+                            }`}
                     >
                         <span className="text-lg">∑</span>
                         Math Symbols
-                        <svg 
-                            className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
-                            viewBox="0 0 24 24" 
-                            fill="none" 
-                            stroke="currentColor" 
+                        <svg
+                            className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
                             strokeWidth="2"
                         >
                             <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </button>
-                    
-                    {/* Symbol Palette Panel */}
+
                     {isOpen && (
                         <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200 animate-fade-in">
-                            {/* Category Tabs */}
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {SYMBOL_CATEGORIES.map((cat) => (
                                     <button
                                         key={cat.key}
                                         onClick={() => setActiveCategory(cat.key)}
-                                        className={`px-3 py-1.5 rounded-lg text-sm font-display font-medium transition-all ${
-                                            activeCategory === cat.key
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-display font-medium transition-all ${activeCategory === cat.key
                                                 ? 'bg-tutor-500 text-white'
                                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                        }`}
+                                            }`}
                                     >
                                         <span className="mr-1">{cat.icon}</span>
                                         {cat.label}
                                     </button>
                                 ))}
                             </div>
-                            
-                            {/* Symbols Grid */}
+
                             <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
                                 {MATH_SYMBOLS[activeCategory].map((item, index) => (
                                     <button
                                         key={index}
                                         onClick={() => onInsert(item.insert)}
                                         className="w-10 h-10 rounded-lg bg-white border border-gray-200
-                                                 flex items-center justify-center text-lg
-                                                 text-gray-700 font-medium
-                                                 hover:bg-tutor-50 hover:border-tutor-300 hover:text-tutor-700
-                                                 transition-all active:scale-95"
+                                                     flex items-center justify-center text-lg
+                                                     text-gray-700 font-medium
+                                                     hover:bg-tutor-50 hover:border-tutor-300 hover:text-tutor-700
+                                                     transition-all active:scale-95"
                                         title={item.label}
                                     >
                                         {item.symbol}
                                     </button>
                                 ))}
                             </div>
-                            
-                            {/* Quick Tips */}
+
                             <div className="mt-4 pt-3 border-t border-gray-200">
                                 <p className="text-xs text-gray-500">
-                                    <strong>Tip:</strong> Click a symbol to insert it at your cursor position, or type math directly (e.g., x^2 for x²)
+                                    <strong>Tip:</strong> Click a symbol to insert it. For LaTeX, wrap in <code className="bg-gray-100 px-1 rounded">$...$</code> to render.
                                 </p>
                             </div>
                         </div>
@@ -739,7 +842,7 @@ Design Philosophy:
                 </div>
             );
         };
-        
+
         // =======================================================================
         // FILE UPLOAD COMPONENT
         // =======================================================================
@@ -747,8 +850,7 @@ Design Philosophy:
             const [isDragOver, setIsDragOver] = useState(false);
             const [preview, setPreview] = useState(null);
             const fileInputRef = useRef(null);
-            
-            // Generate preview for image files
+
             useEffect(() => {
                 if (selectedFile && getFileCategory(selectedFile.name) === 'image') {
                     const reader = new FileReader();
@@ -758,26 +860,26 @@ Design Philosophy:
                     setPreview(null);
                 }
             }, [selectedFile]);
-            
+
             const handleDragOver = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 if (!disabled) setIsDragOver(true);
             };
-            
+
             const handleDragLeave = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setIsDragOver(false);
             };
-            
+
             const handleDrop = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setIsDragOver(false);
-                
+
                 if (disabled) return;
-                
+
                 const files = e.dataTransfer.files;
                 if (files && files.length > 0) {
                     const file = files[0];
@@ -788,7 +890,7 @@ Design Philosophy:
                     }
                 }
             };
-            
+
             const handleFileInput = (e) => {
                 const file = e.target.files[0];
                 if (file) {
@@ -799,39 +901,38 @@ Design Philosophy:
                     }
                 }
             };
-            
+
             const handleClick = () => {
                 if (!disabled && fileInputRef.current) {
                     fileInputRef.current.click();
                 }
             };
-            
-            // Icon for file type
+
             const FileIcon = ({ category }) => {
                 if (category === 'image') {
                     return (
                         <svg className="w-8 h-8 text-tutor-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
-                            <polyline points="21 15 16 10 5 21"/>
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
                         </svg>
                     );
                 } else if (category === 'document') {
                     return (
                         <svg className="w-8 h-8 text-accent-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
                         </svg>
                     );
                 }
                 return (
                     <svg className="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
                 );
             };
-            
+
             return (
                 <div className="mb-6">
                     <input
@@ -842,7 +943,7 @@ Design Philosophy:
                         className="hidden"
                         disabled={disabled}
                     />
-                    
+
                     {!selectedFile ? (
                         <div
                             onClick={handleClick}
@@ -854,8 +955,8 @@ Design Philosophy:
                             <div className="flex flex-col items-center gap-4">
                                 <div className="w-16 h-16 bg-tutor-100 rounded-full flex items-center justify-center">
                                     <svg className="w-8 h-8 text-tutor-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
                                     </svg>
                                 </div>
                                 <div>
@@ -884,11 +985,10 @@ Design Philosophy:
                                 <div className="flex-1">
                                     <p className="font-display font-semibold text-chalk truncate">{selectedFile.name}</p>
                                     <p className="text-gray-500 text-sm">{formatFileSize(selectedFile.size)}</p>
-                                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mt-1 ${
-                                        getFileCategory(selectedFile.name) === 'image' 
-                                            ? 'bg-tutor-100 text-tutor-700' 
+                                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mt-1 ${getFileCategory(selectedFile.name) === 'image'
+                                            ? 'bg-tutor-100 text-tutor-700'
                                             : 'bg-accent-100 text-accent-700'
-                                    }`}>
+                                        }`}>
                                         {selectedFile.name.split('.').pop().toUpperCase()}
                                     </span>
                                 </div>
@@ -899,7 +999,7 @@ Design Philosophy:
                                         title="Remove file"
                                     >
                                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                                         </svg>
                                     </button>
                                 )}
@@ -909,7 +1009,7 @@ Design Philosophy:
                 </div>
             );
         };
-        
+
         // =======================================================================
         // LOGIN SCREEN COMPONENT
         // =======================================================================
@@ -923,14 +1023,14 @@ Design Philosophy:
             const [step, setStep] = useState('signin');
             const [configLoaded, setConfigLoaded] = useState(false);
             const [useGoogleAuth, setUseGoogleAuth] = useState(false);
-            
+
             const handleGoogleCallback = useCallback((response) => {
                 const credential = response.credential;
                 const payload = JSON.parse(atob(credential.split('.')[1]));
                 const userData = { id: payload.sub, email: payload.email, name: payload.name, picture: payload.picture, authType: 'google' };
-                
+
                 localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-                
+
                 const storedApiKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
                 if (storedApiKey) {
                     onLogin(userData, storedApiKey);
@@ -939,32 +1039,32 @@ Design Philosophy:
                     setStep('apikey');
                 }
             }, [onLogin]);
-            
+
             useEffect(() => {
                 const initializeLogin = async () => {
                     await loadConfig();
                     setUseGoogleAuth(APP_CONFIG.use_google_auth);
                     setConfigLoaded(true);
-                    
+
                     const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
                     const storedApiKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
-                    
-                    if (storedUser && storedApiKey) { 
-                        onLogin(JSON.parse(storedUser), storedApiKey); 
-                        return; 
+
+                    if (storedUser && storedApiKey) {
+                        onLogin(JSON.parse(storedUser), storedApiKey);
+                        return;
                     }
-                    if (storedUser) { 
-                        setUser(JSON.parse(storedUser)); 
+                    if (storedUser) {
+                        setUser(JSON.parse(storedUser));
                         if (storedApiKey) {
                             setApiKey(storedApiKey);
                         }
-                        setStep('apikey'); 
+                        setStep('apikey');
                     }
-                    
+
                     if (APP_CONFIG.use_google_auth && APP_CONFIG.google_client_id && window.google) {
-                        window.google.accounts.id.initialize({ 
-                            client_id: APP_CONFIG.google_client_id, 
-                            callback: handleGoogleCallback 
+                        window.google.accounts.id.initialize({
+                            client_id: APP_CONFIG.google_client_id,
+                            callback: handleGoogleCallback
                         });
                         setTimeout(() => {
                             const btnContainer = document.getElementById('google-signin-btn');
@@ -975,25 +1075,25 @@ Design Philosophy:
                         }, 100);
                     }
                 };
-                
+
                 initializeLogin();
             }, [handleGoogleCallback, onLogin]);
-            
+
             const handleSimpleLogin = () => {
                 if (!name.trim()) { setError('Please enter your name'); return; }
                 if (!email.trim() || !email.includes('@')) { setError('Please enter a valid email'); return; }
-                
-                const userData = { 
-                    id: 'user_' + Date.now(), 
-                    email: email.trim(), 
-                    name: name.trim(), 
+
+                const userData = {
+                    id: 'user_' + Date.now(),
+                    email: email.trim(),
+                    name: name.trim(),
                     picture: null,
                     authType: 'email'
                 };
-                
+
                 localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
                 setError(null);
-                
+
                 const storedApiKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
                 if (storedApiKey) {
                     onLogin(userData, storedApiKey);
@@ -1002,7 +1102,7 @@ Design Philosophy:
                     setStep('apikey');
                 }
             };
-            
+
             const handleApiKeySubmit = async () => {
                 if (!apiKey.trim()) { setError('Please enter your Gemini API key'); return; }
                 setVerifying(true); setError(null);
@@ -1013,7 +1113,7 @@ Design Philosophy:
                 } catch (err) { setError('Failed to verify API key. Please try again.'); }
                 finally { setVerifying(false); }
             };
-            
+
             if (!configLoaded) {
                 return (
                     <div className="min-h-screen flex items-center justify-center p-4">
@@ -1024,7 +1124,7 @@ Design Philosophy:
                     </div>
                 );
             }
-            
+
             return (
                 <div className="min-h-screen flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/10 p-8 max-w-md w-full animate-fade-in">
@@ -1033,14 +1133,14 @@ Design Philosophy:
                             <h1 className="font-display font-bold text-3xl gradient-text">AI Math Tutor</h1>
                             <p className="text-gray-500 mt-2">Learn mathematics step-by-step with AI</p>
                         </div>
-                        
+
                         {step === 'signin' && (
                             <div className="space-y-6">
                                 <div className="text-center">
                                     <h2 className="font-display font-semibold text-xl text-chalk mb-2">Welcome!</h2>
                                     <p className="text-gray-500 text-sm">Sign in to get started</p>
                                 </div>
-                                
+
                                 {useGoogleAuth && (
                                     <>
                                         <div className="flex justify-center">
@@ -1052,39 +1152,39 @@ Design Philosophy:
                                         </div>
                                     </>
                                 )}
-                                
+
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block font-display font-medium text-gray-700 mb-2">Your Name</label>
                                         <input type="text" value={name} onChange={(e) => setName(e.target.value)}
                                             placeholder="Enter your name"
-                                            className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all input-focus"/>
+                                            className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all input-focus" />
                                     </div>
                                     <div>
                                         <label className="block font-display font-medium text-gray-700 mb-2">Email Address</label>
                                         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                                             onKeyPress={(e) => e.key === 'Enter' && handleSimpleLogin()}
                                             placeholder="you@example.com"
-                                            className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all input-focus"/>
+                                            className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all input-focus" />
                                     </div>
                                     {error && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
                                     <button onClick={handleSimpleLogin}
                                         className="w-full bg-gradient-to-r from-tutor-600 to-tutor-500 text-white font-display font-semibold py-3 px-6 rounded-xl shadow-lg shadow-tutor-600/30 hover:from-tutor-700 hover:to-tutor-600 transition-all btn-press flex items-center justify-center gap-2">
                                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" />
                                         </svg>
                                         Continue
                                     </button>
                                 </div>
                             </div>
                         )}
-                        
+
                         {step === 'apikey' && (
                             <div className="space-y-6">
                                 {user && (
                                     <div className="flex items-center gap-3 p-3 bg-tutor-50 rounded-xl">
                                         {user.picture ? (
-                                            <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full" referrerPolicy="no-referrer"/>
+                                            <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
                                         ) : (
                                             <div className="w-10 h-10 bg-tutor-200 rounded-full flex items-center justify-center">
                                                 <span className="text-tutor-700 font-display font-bold">{user.name?.[0] || 'G'}</span>
@@ -1104,7 +1204,7 @@ Design Philosophy:
                                     <label className="block font-display font-medium text-gray-700 mb-2">Gemini API Key</label>
                                     <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)}
                                         onKeyPress={(e) => e.key === 'Enter' && handleApiKeySubmit()} placeholder="AIza..."
-                                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all input-focus"/>
+                                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all input-focus" />
                                 </div>
                                 {error && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>}
                                 <button onClick={handleApiKeySubmit} disabled={verifying || !apiKey.trim()}
@@ -1124,9 +1224,9 @@ Design Philosophy:
                 </div>
             );
         };
-        
+
         // =======================================================================
-        // PROBLEM SOLVER COMPONENT (with File Upload)
+        // PROBLEM SOLVER COMPONENT (with File Upload and Live Preview)
         // =======================================================================
         const ProblemSolver = () => {
             const [problem, setProblem] = useState('');
@@ -1137,73 +1237,79 @@ Design Philosophy:
             const [error, setError] = useState(null);
             const [inputMode, setInputMode] = useState('text'); // 'text' or 'file'
             const [showSymbolPalette, setShowSymbolPalette] = useState(false);
+            const [showPreview, setShowPreview] = useState(true); // Live preview toggle
             const textareaRef = useRef(null);
-            
+
             // Insert symbol at cursor position in textarea
             const insertSymbol = (symbol) => {
                 if (!textareaRef.current) return;
-                
+
                 const textarea = textareaRef.current;
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 const newText = problem.substring(0, start) + symbol + problem.substring(end);
-                
+
                 setProblem(newText);
-                
-                // Set cursor position after inserted symbol
+
                 setTimeout(() => {
                     textarea.focus();
                     textarea.selectionStart = textarea.selectionEnd = start + symbol.length;
                 }, 0);
             };
-            
+
             const exampleProblems = [
                 "Solve for x: 2x + 5 = 13", "Find the derivative of f(x) = x³ + 2x² - 5x + 3",
                 "Calculate the area of a triangle with base 8 and height 12", "Simplify: (3x² + 2x - 1) + (x² - 4x + 5)",
                 "Find sin(45°)", "Solve the system: 2x + y = 10, x - y = 2"
             ];
-            
+
+            // Example problems with LaTeX formatting for preview demo
+            const latexExamples = [
+                { text: "Solve for $x$: $2x + 5 = 13$", label: "Linear equation" },
+                { text: "Find $\\frac{d}{dx}(x^3 + 2x^2)$", label: "Derivative" },
+                { text: "Evaluate $\\int x^2 dx$", label: "Integral" },
+                { text: "Simplify $\\sqrt{144} + \\frac{1}{2}$", label: "Roots & fractions" },
+            ];
+
             const handleSolve = async () => {
                 setLoading(true); setError(null); setSolution(null);
-                
+
                 try {
                     let result;
-                    
+
                     if (inputMode === 'file' && selectedFile) {
-                        // Solve from uploaded file
                         result = await solveFromFile(selectedFile, additionalContext);
                     } else {
-                        // Solve from text input
-                        if (!problem.trim()) { 
-                            setError('Please enter a math problem to solve.'); 
+                        if (!problem.trim()) {
+                            setError('Please enter a math problem to solve.');
                             setLoading(false);
-                            return; 
+                            return;
                         }
                         result = await solveProblem(problem);
                     }
-                    
+
                     setSolution(result);
-                } catch (err) { 
-                    setError(err.message); 
-                } finally { 
-                    setLoading(false); 
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
                 }
             };
-            
+
             const handleClearFile = () => {
                 setSelectedFile(null);
                 setAdditionalContext('');
             };
-            
+
             const canSolve = inputMode === 'file' ? selectedFile !== null : problem.trim() !== '';
-            
+
             return (
                 <div className="space-y-8 animate-fade-in">
                     <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 p-8 border border-tutor-100">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-12 h-12 bg-tutor-100 rounded-xl flex items-center justify-center">
                                 <svg className="w-6 h-6 text-tutor-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                                 </svg>
                             </div>
                             <div>
@@ -1211,65 +1317,88 @@ Design Philosophy:
                                 <p className="text-gray-500">Type a problem or upload an image/document</p>
                             </div>
                         </div>
-                        
+
                         {/* Input Mode Toggle */}
                         <div className="flex gap-2 mb-6">
                             <button
                                 onClick={() => setInputMode('text')}
-                                className={`flex-1 py-3 px-4 rounded-xl font-display font-medium transition-all ${
-                                    inputMode === 'text' 
-                                        ? 'bg-tutor-600 text-white shadow-md' 
+                                className={`flex-1 py-3 px-4 rounded-xl font-display font-medium transition-all ${inputMode === 'text'
+                                        ? 'bg-tutor-600 text-white shadow-md'
                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
+                                    }`}
                             >
                                 <span className="flex items-center justify-center gap-2">
                                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                        <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
-                                        <line x1="16" y1="17" x2="8" y2="17"/>
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                        <polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" />
+                                        <line x1="16" y1="17" x2="8" y2="17" />
                                     </svg>
                                     Type Problem
                                 </span>
                             </button>
                             <button
                                 onClick={() => setInputMode('file')}
-                                className={`flex-1 py-3 px-4 rounded-xl font-display font-medium transition-all ${
-                                    inputMode === 'file' 
-                                        ? 'bg-accent-500 text-white shadow-md' 
+                                className={`flex-1 py-3 px-4 rounded-xl font-display font-medium transition-all ${inputMode === 'file'
+                                        ? 'bg-accent-500 text-white shadow-md'
                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
+                                    }`}
                             >
                                 <span className="flex items-center justify-center gap-2">
                                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
                                     </svg>
                                     Upload File
                                 </span>
                             </button>
                         </div>
-                        
+
                         {/* Text Input Mode */}
                         {inputMode === 'text' && (
                             <>
                                 <div className="relative">
-                                    <textarea 
+                                    <textarea
                                         ref={textareaRef}
-                                        value={problem} 
+                                        value={problem}
                                         onChange={(e) => setProblem(e.target.value)}
-                                        onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSolve(); }}}
-                                        placeholder="Example: Solve for x: 2x + 5 = 13"
-                                        className="w-full h-32 p-4 text-lg border-2 border-tutor-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all resize-none input-focus placeholder:text-gray-400"/>
+                                        onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSolve(); } }}
+                                        placeholder="Example: Solve for $x$: $2x + 5 = 13$  (Use $...$ for math notation)"
+                                        className="w-full h-32 p-4 text-lg border-2 border-tutor-200 rounded-xl focus:border-tutor-500 focus:ring-4 focus:ring-tutor-500/20 transition-all resize-none input-focus placeholder:text-gray-400" />
                                     <span className="absolute bottom-3 right-3 text-sm text-gray-400">{problem.length} characters</span>
                                 </div>
-                                
+
+                                {/* Live Preview Toggle and Panel */}
+                                <div className="mt-4 flex items-center gap-3">
+                                    <button
+                                        onClick={() => setShowPreview(!showPreview)}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-display font-medium transition-all ${showPreview
+                                                ? 'bg-tutor-100 text-tutor-700 border border-tutor-300'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
+                                            }`}
+                                    >
+                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
+                                        Live Preview {showPreview ? 'On' : 'Off'}
+                                    </button>
+                                </div>
+
+                                {/* Live LaTeX Preview */}
+                                <LiveLatexPreview
+                                    text={problem}
+                                    isVisible={showPreview}
+                                    variant="solver"
+                                    placeholder="Type your math problem above to see it rendered here... Try using $x^2$ or $\\frac{1}{2}$"
+                                />
+
                                 {/* Math Symbol Palette */}
-                                <MathSymbolPalette 
+                                <MathSymbolPalette
                                     onInsert={insertSymbol}
                                     isOpen={showSymbolPalette}
                                     onToggle={() => setShowSymbolPalette(!showSymbolPalette)}
                                 />
-                                
+
                                 <div className="mt-4">
                                     <p className="text-sm text-gray-500 mb-3 font-display font-medium">Try an example:</p>
                                     <div className="flex flex-wrap gap-2">
@@ -1281,9 +1410,22 @@ Design Philosophy:
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* LaTeX Examples */}
+                                <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                                    <p className="text-sm text-blue-700 font-display font-medium mb-2">✨ Try LaTeX notation for better rendering:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {latexExamples.map((ex, index) => (
+                                            <button key={index} onClick={() => setProblem(ex.text)}
+                                                className="text-xs px-3 py-1.5 bg-white text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200">
+                                                {ex.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </>
                         )}
-                        
+
                         {/* File Upload Mode */}
                         {inputMode === 'file' && (
                             <>
@@ -1293,7 +1435,7 @@ Design Philosophy:
                                     onClear={handleClearFile}
                                     disabled={loading}
                                 />
-                                
+
                                 {selectedFile && (
                                     <div className="mt-4">
                                         <label className="block font-display font-medium text-gray-700 mb-2">
@@ -1307,7 +1449,7 @@ Design Philosophy:
                                         />
                                     </div>
                                 )}
-                                
+
                                 <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                                     <h4 className="font-display font-medium text-gray-700 mb-2">Supported File Types:</h4>
                                     <div className="flex flex-wrap gap-2">
@@ -1322,32 +1464,32 @@ Design Philosophy:
                                 </div>
                             </>
                         )}
-                        
+
                         <button onClick={handleSolve} disabled={loading || !canSolve}
                             className="mt-6 w-full bg-gradient-to-r from-tutor-600 to-tutor-500 text-white font-display font-semibold text-lg py-4 px-8 rounded-xl shadow-lg shadow-tutor-600/30 hover:from-tutor-700 hover:to-tutor-600 disabled:from-gray-300 disabled:to-gray-300 disabled:shadow-none transition-all duration-300 btn-press flex items-center justify-center gap-2">
                             {loading ? (
                                 <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spinner"></div>
-                                {inputMode === 'file' ? 'Analyzing File...' : 'Solving...'}</>
+                                    {inputMode === 'file' ? 'Analyzing File...' : 'Solving...'}</>
                             ) : (
                                 <><svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
                                 </svg>
-                                {inputMode === 'file' ? 'Analyze & Solve' : 'Solve Problem'}</>
+                                    {inputMode === 'file' ? 'Analyze & Solve' : 'Solve Problem'}</>
                             )}
                         </button>
                     </div>
-                    
+
                     {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
                     {loading && <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 p-8 border border-tutor-100">
                         <LoadingSpinner message={inputMode === 'file' ? "Analyzing your file..." : "Analyzing your problem..."} />
                     </div>}
-                    
+
                     {solution && !loading && (
                         <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 overflow-hidden border border-tutor-100 animate-slide-up">
                             <div className="bg-gradient-to-r from-tutor-600 to-tutor-500 p-6 text-white">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
                                     </div>
                                     <div>
                                         <h3 className="font-display font-bold text-xl">Solution</h3>
@@ -1356,30 +1498,28 @@ Design Philosophy:
                                 </div>
                             </div>
                             <div className="p-6 space-y-6">
-                                {/* Show detected problem from file */}
                                 {solution.problem_detected && solution.problem_detected !== 'No math problem found' && (
                                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                                         <h4 className="font-display font-semibold text-blue-800 mb-2 flex items-center gap-2">
                                             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                                                <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
                                             </svg>
                                             Problem Detected
                                         </h4>
-                                        <p className="text-blue-700">{solution.problem_detected}</p>
+                                        <p className="text-blue-700"><MathText text={solution.problem_detected} /></p>
                                     </div>
                                 )}
-                                
-                                {/* Show source file info */}
+
                                 {solution.source_file && (
                                     <div className="flex items-center gap-2 text-sm text-gray-500">
                                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                            <polyline points="14 2 14 8 20 8"/>
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
                                         </svg>
                                         <span>From: {solution.source_file.filename}</span>
                                     </div>
                                 )}
-                                
+
                                 {solution.concepts && solution.concepts.length > 0 && (
                                     <div>
                                         <h4 className="font-display font-semibold text-lg text-chalk mb-3">Concepts Used</h4>
@@ -1425,7 +1565,7 @@ Design Philosophy:
                                     <div className="bg-tutor-50 rounded-xl p-5 border border-tutor-200">
                                         <h4 className="font-display font-semibold text-tutor-800 mb-2 flex items-center gap-2">
                                             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/>
+                                                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="m9 12 2 2 4-4" />
                                             </svg>
                                             How to Verify
                                         </h4>
@@ -1440,9 +1580,9 @@ Design Philosophy:
                 </div>
             );
         };
-        
+
         // =======================================================================
-        // STUDY MODE COMPONENT - Interactive Guided Learning
+        // STUDY MODE COMPONENT - Interactive Guided Learning (with Live Preview)
         // =======================================================================
         const StudyMode = () => {
             // State for problem input
@@ -1450,13 +1590,13 @@ Design Philosophy:
             const [studyPlan, setStudyPlan] = useState(null);
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState(null);
-            
+
             // State for file upload
-            const [inputMode, setInputMode] = useState('text'); // 'text' or 'file'
+            const [inputMode, setInputMode] = useState('text');
             const [selectedFile, setSelectedFile] = useState(null);
             const [additionalContext, setAdditionalContext] = useState('');
             const [extractingProblem, setExtractingProblem] = useState(false);
-            
+
             // State for tracking progress through steps
             const [currentStep, setCurrentStep] = useState(0);
             const [stepAnswers, setStepAnswers] = useState({});
@@ -1466,54 +1606,56 @@ Design Philosophy:
             const [checkingAnswer, setCheckingAnswer] = useState(false);
             const [gettingHint, setGettingHint] = useState(false);
             const [studyComplete, setStudyComplete] = useState(false);
-            
-            // State for math symbol palette
+
+            // State for math symbol palette and live preview
             const [showSymbolPalette, setShowSymbolPalette] = useState(false);
             const [showAnswerSymbolPalette, setShowAnswerSymbolPalette] = useState(false);
+            const [showPreview, setShowPreview] = useState(true); // Live preview for problem input
+            const [showAnswerPreview, setShowAnswerPreview] = useState(true); // Live preview for answer input
             const problemTextareaRef = useRef(null);
             const answerInputRef = useRef(null);
-            
+
             // Clear file selection
             const handleClearFile = () => {
                 setSelectedFile(null);
                 setAdditionalContext('');
             };
-            
+
             // Insert symbol at cursor position in problem textarea
             const insertSymbolToProblem = (symbol) => {
                 if (!problemTextareaRef.current) return;
-                
+
                 const textarea = problemTextareaRef.current;
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 const newText = problem.substring(0, start) + symbol + problem.substring(end);
-                
+
                 setProblem(newText);
-                
+
                 setTimeout(() => {
                     textarea.focus();
                     textarea.selectionStart = textarea.selectionEnd = start + symbol.length;
                 }, 0);
             };
-            
+
             // Insert symbol at cursor position in answer input
             const insertSymbolToAnswer = (symbol) => {
                 if (!answerInputRef.current) return;
-                
+
                 const input = answerInputRef.current;
                 const start = input.selectionStart;
                 const end = input.selectionEnd;
                 const currentAnswer = stepAnswers[currentStep] || '';
                 const newText = currentAnswer.substring(0, start) + symbol + currentAnswer.substring(end);
-                
+
                 setStepAnswers(prev => ({ ...prev, [currentStep]: newText }));
-                
+
                 setTimeout(() => {
                     input.focus();
                     input.selectionStart = input.selectionEnd = start + symbol.length;
                 }, 0);
             };
-            
+
             // Example problems for study mode
             const exampleProblems = [
                 "Solve for x: 3x - 7 = 14",
@@ -1521,10 +1663,9 @@ Design Philosophy:
                 "Simplify: 2(x + 3) - 4(x - 1)",
                 "Solve: x² - 5x + 6 = 0"
             ];
-            
+
             // Start a new study session
             const handleStartStudy = async () => {
-                // Validate input based on mode
                 if (inputMode === 'text' && !problem.trim()) {
                     setError('Please enter a math problem to study.');
                     return;
@@ -1533,7 +1674,7 @@ Design Philosophy:
                     setError('Please upload a file containing a math problem.');
                     return;
                 }
-                
+
                 setLoading(true);
                 setError(null);
                 setStudyPlan(null);
@@ -1545,27 +1686,24 @@ Design Philosophy:
                 setStudyComplete(false);
                 setShowSymbolPalette(false);
                 setShowAnswerSymbolPalette(false);
-                
+
                 try {
                     let problemToStudy = problem;
-                    
-                    // If file mode, first extract the problem from the file
+
                     if (inputMode === 'file' && selectedFile) {
                         setExtractingProblem(true);
                         const fileResult = await solveFromFile(selectedFile, additionalContext || 'Extract the math problem from this file.');
                         setExtractingProblem(false);
-                        
-                        // Use the detected problem from the file
+
                         if (fileResult.problem_detected && fileResult.problem_detected !== 'No math problem found') {
                             problemToStudy = fileResult.problem_detected;
                         } else if (fileResult.final_answer) {
-                            // Fallback: construct problem from the solution info
                             problemToStudy = `Solve: ${fileResult.problem_type || 'math problem'}`;
                         } else {
                             throw new Error('Could not extract a math problem from the uploaded file. Please try a clearer image or type the problem manually.');
                         }
                     }
-                    
+
                     const plan = await startStudySession(problemToStudy);
                     setStudyPlan(plan);
                 } catch (err) {
@@ -1575,22 +1713,22 @@ Design Philosophy:
                     setLoading(false);
                 }
             };
-            
+
             // Check the student's answer for the current step
             const handleCheckAnswer = async () => {
                 if (!studyPlan || !studyPlan.steps[currentStep]) return;
-                
+
                 const step = studyPlan.steps[currentStep];
                 const studentAnswer = stepAnswers[currentStep] || '';
-                
+
                 if (!studentAnswer.trim()) {
                     setError('Please enter your answer before checking.');
                     return;
                 }
-                
+
                 setCheckingAnswer(true);
                 setError(null);
-                
+
                 try {
                     const result = await checkStudyAnswer({
                         problem: studyPlan.problem,
@@ -1599,7 +1737,7 @@ Design Philosophy:
                         studentAnswer: studentAnswer,
                         expectedFormat: step.expected_format
                     });
-                    
+
                     setStepResults(prev => ({ ...prev, [currentStep]: result }));
                 } catch (err) {
                     setError(err.message);
@@ -1607,22 +1745,22 @@ Design Philosophy:
                     setCheckingAnswer(false);
                 }
             };
-            
+
             // Get a hint for the current step
             const handleGetHint = async () => {
                 if (!studyPlan || !studyPlan.steps[currentStep]) return;
-                
+
                 const step = studyPlan.steps[currentStep];
                 const currentHintLevel = (additionalHints[currentStep]?.level || 0) + 1;
-                
+
                 if (currentHintLevel > 3) {
                     setError('No more hints available for this step.');
                     return;
                 }
-                
+
                 setGettingHint(true);
                 setError(null);
-                
+
                 try {
                     const hintResult = await getStudyHint({
                         problem: studyPlan.problem,
@@ -1631,9 +1769,9 @@ Design Philosophy:
                         hintLevel: currentHintLevel,
                         studentAttempt: stepAnswers[currentStep] || ''
                     });
-                    
-                    setAdditionalHints(prev => ({ 
-                        ...prev, 
+
+                    setAdditionalHints(prev => ({
+                        ...prev,
                         [currentStep]: {
                             hint: hintResult.hint,
                             level: currentHintLevel,
@@ -1648,7 +1786,7 @@ Design Philosophy:
                     setGettingHint(false);
                 }
             };
-            
+
             // Move to the next step
             const handleNextStep = () => {
                 if (currentStep < studyPlan.steps.length - 1) {
@@ -1657,7 +1795,7 @@ Design Philosophy:
                     setStudyComplete(true);
                 }
             };
-            
+
             // Reset and start a new problem
             const handleReset = () => {
                 setProblem('');
@@ -1675,7 +1813,7 @@ Design Philosophy:
                 setSelectedFile(null);
                 setAdditionalContext('');
             };
-            
+
             // Calculate progress
             const calculateProgress = () => {
                 if (!studyPlan) return { completed: 0, total: 0, percentage: 0 };
@@ -1683,11 +1821,11 @@ Design Philosophy:
                 const total = studyPlan.steps.length;
                 return { completed, total, percentage: Math.round((completed / total) * 100) };
             };
-            
+
             const progress = calculateProgress();
             const currentStepData = studyPlan?.steps?.[currentStep];
             const currentResult = stepResults[currentStep];
-            
+
             return (
                 <div className="space-y-8 animate-fade-in">
                     {/* Problem Input Section */}
@@ -1696,7 +1834,7 @@ Design Philosophy:
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-12 h-12 bg-study-100 rounded-xl flex items-center justify-center">
                                     <svg className="w-6 h-6 text-study-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                        <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                     </svg>
                                 </div>
                                 <div>
@@ -1704,61 +1842,59 @@ Design Philosophy:
                                     <p className="text-gray-500">Learn step-by-step with guided hints</p>
                                 </div>
                             </div>
-                            
+
                             <div className="bg-study-50 rounded-xl p-4 mb-6 border border-study-200">
                                 <div className="flex items-start gap-3">
                                     <div className="flex-shrink-0 w-8 h-8 bg-study-200 rounded-full flex items-center justify-center">
                                         <svg className="w-4 h-4 text-study-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                         </svg>
                                     </div>
                                     <div>
                                         <h4 className="font-display font-semibold text-study-800">How Study Mode Works</h4>
                                         <p className="text-study-700 text-sm mt-1">
-                                            Enter a problem and work through it step-by-step. You'll get guidance and hints 
+                                            Enter a problem and work through it step-by-step. You'll get guidance and hints
                                             without the answer being given away. Learn by doing!
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {/* Input Mode Toggle */}
                             <div className="flex gap-2 mb-6">
                                 <button
                                     onClick={() => setInputMode('text')}
-                                    className={`flex-1 py-3 px-4 rounded-xl font-display font-medium transition-all ${
-                                        inputMode === 'text' 
-                                            ? 'bg-study-600 text-white shadow-md' 
+                                    className={`flex-1 py-3 px-4 rounded-xl font-display font-medium transition-all ${inputMode === 'text'
+                                            ? 'bg-study-600 text-white shadow-md'
                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}
+                                        }`}
                                 >
                                     <span className="flex items-center justify-center gap-2">
                                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                            <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
-                                            <line x1="16" y1="17" x2="8" y2="17"/>
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" />
+                                            <line x1="16" y1="17" x2="8" y2="17" />
                                         </svg>
                                         Type Problem
                                     </span>
                                 </button>
                                 <button
                                     onClick={() => setInputMode('file')}
-                                    className={`flex-1 py-3 px-4 rounded-xl font-display font-medium transition-all ${
-                                        inputMode === 'file' 
-                                            ? 'bg-accent-500 text-white shadow-md' 
+                                    className={`flex-1 py-3 px-4 rounded-xl font-display font-medium transition-all ${inputMode === 'file'
+                                            ? 'bg-accent-500 text-white shadow-md'
                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}
+                                        }`}
                                 >
                                     <span className="flex items-center justify-center gap-2">
                                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                            <polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
                                         </svg>
                                         Upload File
                                     </span>
                                 </button>
                             </div>
-                            
+
                             {/* Text Input Mode */}
                             {inputMode === 'text' && (
                                 <>
@@ -1767,19 +1903,44 @@ Design Philosophy:
                                             ref={problemTextareaRef}
                                             value={problem}
                                             onChange={(e) => setProblem(e.target.value)}
-                                            onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStartStudy(); }}}
-                                            placeholder="Enter a math problem you want to learn..."
+                                            onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStartStudy(); } }}
+                                            placeholder="Enter a math problem you want to learn... (Use $...$ for math notation)"
                                             className="w-full h-32 p-4 text-lg border-2 border-study-200 rounded-xl focus:border-study-500 focus:ring-4 focus:ring-study-500/20 transition-all resize-none input-focus placeholder:text-gray-400"
                                         />
                                     </div>
-                                    
+
+                                    {/* Live Preview Toggle */}
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <button
+                                            onClick={() => setShowPreview(!showPreview)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-display font-medium transition-all ${showPreview
+                                                    ? 'bg-study-100 text-study-700 border border-study-300'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
+                                                }`}
+                                        >
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                            Live Preview {showPreview ? 'On' : 'Off'}
+                                        </button>
+                                    </div>
+
+                                    {/* Live LaTeX Preview for problem input */}
+                                    <LiveLatexPreview
+                                        text={problem}
+                                        isVisible={showPreview}
+                                        variant="study"
+                                        placeholder="Type your math problem above to see it rendered here..."
+                                    />
+
                                     {/* Math Symbol Palette for problem input */}
-                                    <MathSymbolPalette 
+                                    <MathSymbolPalette
                                         onInsert={insertSymbolToProblem}
                                         isOpen={showSymbolPalette}
                                         onToggle={() => setShowSymbolPalette(!showSymbolPalette)}
                                     />
-                                    
+
                                     <div className="mb-6 mt-4">
                                         <p className="text-sm text-gray-500 mb-3 font-display font-medium">Try an example:</p>
                                         <div className="flex flex-wrap gap-2">
@@ -1793,7 +1954,7 @@ Design Philosophy:
                                     </div>
                                 </>
                             )}
-                            
+
                             {/* File Upload Mode */}
                             {inputMode === 'file' && (
                                 <>
@@ -1803,7 +1964,7 @@ Design Philosophy:
                                         onClear={handleClearFile}
                                         disabled={loading}
                                     />
-                                    
+
                                     {selectedFile && (
                                         <div className="mt-4">
                                             <label className="block font-display font-medium text-gray-700 mb-2">
@@ -1817,7 +1978,7 @@ Design Philosophy:
                                             />
                                         </div>
                                     )}
-                                    
+
                                     <div className="mt-4 p-4 bg-gray-50 rounded-lg mb-6">
                                         <h4 className="font-display font-medium text-gray-700 mb-2">Supported File Types:</h4>
                                         <div className="flex flex-wrap gap-2">
@@ -1829,33 +1990,30 @@ Design Philosophy:
                                             <span className="text-xs px-2 py-1 bg-accent-100 text-accent-700 rounded">PDF</span>
                                             <span className="text-xs px-2 py-1 bg-accent-100 text-accent-700 rounded">DOCX</span>
                                         </div>
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            Upload an image or document with a math problem. The AI will extract the problem and guide you through solving it step-by-step.
-                                        </p>
                                     </div>
                                 </>
                             )}
-                            
-                            <button 
-                                onClick={handleStartStudy} 
+
+                            <button
+                                onClick={handleStartStudy}
                                 disabled={loading || (inputMode === 'text' ? !problem.trim() : !selectedFile)}
                                 className="w-full bg-gradient-to-r from-study-600 to-study-500 text-white font-display font-semibold text-lg py-4 px-8 rounded-xl shadow-lg shadow-study-600/30 hover:from-study-700 hover:to-study-600 disabled:from-gray-300 disabled:to-gray-300 disabled:shadow-none transition-all duration-300 btn-press flex items-center justify-center gap-2">
                                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                 </svg>
                                 {extractingProblem ? 'Extracting Problem...' : 'Start Learning'}
                             </button>
                         </div>
                     )}
-                    
+
                     {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
-                    
+
                     {loading && (
                         <div className="bg-white rounded-2xl shadow-xl shadow-study-900/5 p-8 border border-study-100">
                             <LoadingSpinner message={extractingProblem ? "Extracting problem from file..." : "Preparing your guided learning session..."} />
                         </div>
                     )}
-                    
+
                     {/* Active Study Session */}
                     {studyPlan && !loading && !studyComplete && (
                         <div className="space-y-6">
@@ -1871,22 +2029,21 @@ Design Philosophy:
                                             <p className="text-sm text-study-100">Step {currentStep + 1} of {studyPlan.total_steps}</p>
                                             <div className="flex gap-1 mt-2">
                                                 {studyPlan.steps.map((_, idx) => (
-                                                    <div key={idx} className={`w-3 h-3 rounded-full transition-all ${
-                                                        idx === currentStep ? 'bg-white scale-125' :
-                                                        stepResults[idx]?.is_correct ? 'bg-green-300' :
-                                                        idx < currentStep ? 'bg-red-300' : 'bg-white/30'
-                                                    }`}/>
+                                                    <div key={idx} className={`w-3 h-3 rounded-full transition-all ${idx === currentStep ? 'bg-white scale-125' :
+                                                            stepResults[idx]?.is_correct ? 'bg-green-300' :
+                                                                idx < currentStep ? 'bg-red-300' : 'bg-white/30'
+                                                        }`} />
                                                 ))}
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Problem Statement */}
                                     <div className="bg-white/10 rounded-lg p-4">
-                                        <p className="text-white font-medium">{studyPlan.problem}</p>
+                                        <p className="text-white font-medium"><MathText text={studyPlan.problem} /></p>
                                     </div>
                                 </div>
-                                
+
                                 {/* Concepts Needed */}
                                 {studyPlan.concepts_needed && studyPlan.concepts_needed.length > 0 && (
                                     <div className="p-4 bg-study-50 border-b border-study-100">
@@ -1899,7 +2056,7 @@ Design Philosophy:
                                     </div>
                                 )}
                             </div>
-                            
+
                             {/* Current Step Card */}
                             {currentStepData && (
                                 <div className="bg-white rounded-2xl shadow-xl shadow-study-900/5 p-6 border border-study-100 study-step-active">
@@ -1918,11 +2075,10 @@ Design Philosophy:
                                             )}
                                         </div>
                                     </div>
-                                    
+
                                     {/* Hint Section */}
                                     <div className="mb-6">
                                         {!additionalHints[currentStep] ? (
-                                            /* No hint fetched yet - show button to get first hint */
                                             <button
                                                 onClick={handleGetHint}
                                                 disabled={gettingHint}
@@ -1933,34 +2089,32 @@ Design Philosophy:
                                                 ) : (
                                                     <>
                                                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                                                            <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
                                                         </svg>
                                                         Need a Hint?
                                                     </>
                                                 )}
                                             </button>
                                         ) : (
-                                            /* Hint exists - show it */
                                             <div className="p-4 bg-study-50 rounded-lg border border-study-200 hint-reveal">
                                                 <div className="text-study-700">
                                                     <span className="font-semibold">💡 Hint (Level {additionalHints[currentStep].level}/3): </span>
                                                     <MathText text={additionalHints[currentStep].hint} />
                                                 </div>
-                                                
+
                                                 {additionalHints[currentStep].concept && (
                                                     <div className="text-study-600 text-sm mt-2">
                                                         <span className="font-medium">Remember: </span>
                                                         <MathText text={additionalHints[currentStep].concept} />
                                                     </div>
                                                 )}
-                                                
+
                                                 {additionalHints[currentStep].encouragement && (
                                                     <p className="text-study-500 text-sm mt-2 italic">
                                                         {additionalHints[currentStep].encouragement}
                                                     </p>
                                                 )}
-                                                
-                                                {/* Show button for more hints if available and answer not yet correct */}
+
                                                 {!currentResult && additionalHints[currentStep].hasMore && (
                                                     <button
                                                         onClick={handleGetHint}
@@ -1974,15 +2128,15 @@ Design Philosophy:
                                                         )}
                                                     </button>
                                                 )}
-                                                
+
                                                 {!currentResult && !additionalHints[currentStep].hasMore && (
                                                     <p className="mt-3 text-sm text-gray-500 italic">No more hints available for this step.</p>
                                                 )}
                                             </div>
                                         )}
                                     </div>
-                                    
-                                    {/* Answer Input */}
+
+                                    {/* Answer Input with Live Preview */}
                                     {!currentResult && (
                                         <div className="space-y-4">
                                             <div>
@@ -1993,18 +2147,43 @@ Design Philosophy:
                                                     value={stepAnswers[currentStep] || ''}
                                                     onChange={(e) => setStepAnswers(prev => ({ ...prev, [currentStep]: e.target.value }))}
                                                     onKeyPress={(e) => e.key === 'Enter' && handleCheckAnswer()}
-                                                    placeholder="Enter your answer for this step..."
+                                                    placeholder="Enter your answer... (Use $...$ for math notation)"
                                                     className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-study-500 focus:ring-4 focus:ring-study-500/20 transition-all input-focus"
                                                 />
                                             </div>
-                                            
+
+                                            {/* Live Preview Toggle for answer */}
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => setShowAnswerPreview(!showAnswerPreview)}
+                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-display font-medium text-sm transition-all ${showAnswerPreview
+                                                            ? 'bg-study-100 text-study-700 border border-study-300'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
+                                                        }`}
+                                                >
+                                                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                        <circle cx="12" cy="12" r="3" />
+                                                    </svg>
+                                                    Preview {showAnswerPreview ? 'On' : 'Off'}
+                                                </button>
+                                            </div>
+
+                                            {/* Live Preview for answer */}
+                                            <LiveLatexPreview
+                                                text={stepAnswers[currentStep] || ''}
+                                                isVisible={showAnswerPreview}
+                                                variant="study"
+                                                placeholder="Your answer will be rendered here..."
+                                            />
+
                                             {/* Math Symbol Palette for answer input */}
-                                            <MathSymbolPalette 
+                                            <MathSymbolPalette
                                                 onInsert={insertSymbolToAnswer}
                                                 isOpen={showAnswerSymbolPalette}
                                                 onToggle={() => setShowAnswerSymbolPalette(!showAnswerSymbolPalette)}
                                             />
-                                            
+
                                             <button
                                                 onClick={handleCheckAnswer}
                                                 disabled={checkingAnswer || !stepAnswers[currentStep]?.trim()}
@@ -2018,34 +2197,30 @@ Design Philosophy:
                                             </button>
                                         </div>
                                     )}
-                                    
+
                                     {/* Result Feedback */}
                                     {currentResult && (
-                                        <div className={`rounded-xl p-6 animate-slide-up ${
-                                            currentResult.is_correct ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-                                        }`}>
+                                        <div className={`rounded-xl p-6 animate-slide-up ${currentResult.is_correct ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                                            }`}>
                                             <div className="flex items-center gap-3 mb-3">
-                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                                    currentResult.is_correct ? 'bg-green-500' : 'bg-red-500'
-                                                }`}>
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${currentResult.is_correct ? 'bg-green-500' : 'bg-red-500'
+                                                    }`}>
                                                     {currentResult.is_correct ? (
-                                                        <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                                        <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
                                                     ) : (
-                                                        <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                                        <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                                                     )}
                                                 </div>
-                                                <h4 className={`font-display font-bold text-xl ${
-                                                    currentResult.is_correct ? 'text-green-800' : 'text-red-800'
-                                                }`}>
+                                                <h4 className={`font-display font-bold text-xl ${currentResult.is_correct ? 'text-green-800' : 'text-red-800'
+                                                    }`}>
                                                     {currentResult.is_correct ? 'Excellent!' : 'Not Quite'}
                                                 </h4>
                                             </div>
-                                            
+
                                             <p className={`${currentResult.is_correct ? 'text-green-700' : 'text-red-700'}`}>
                                                 {currentResult.feedback}
                                             </p>
-                                            
-                                            {/* Show correct answer if wrong */}
+
                                             {!currentResult.is_correct && currentResult.correct_answer && (
                                                 <div className="mt-4 p-4 bg-white rounded-lg border">
                                                     <div className="text-gray-700">
@@ -2054,8 +2229,7 @@ Design Philosophy:
                                                     </div>
                                                 </div>
                                             )}
-                                            
-                                            {/* Show tip if available */}
+
                                             {currentResult.tip && (
                                                 <div className="mt-4 p-4 bg-white rounded-lg border border-study-200">
                                                     <div className="text-study-700">
@@ -2064,23 +2238,21 @@ Design Philosophy:
                                                     </div>
                                                 </div>
                                             )}
-                                            
-                                            {/* Encouragement message */}
+
                                             {currentResult.encouragement && (
                                                 <p className="mt-4 text-gray-600 italic">{currentResult.encouragement}</p>
                                             )}
-                                            
-                                            {/* Next Step Button */}
+
                                             <button
                                                 onClick={handleNextStep}
                                                 className="mt-4 w-full bg-chalk text-white font-display font-semibold py-3 px-6 rounded-xl hover:bg-chalk-light transition-all btn-press flex items-center justify-center gap-2"
                                             >
                                                 {currentStep < studyPlan.steps.length - 1 ? (
                                                     <>Continue to Step {currentStep + 2}
-                                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg></>
+                                                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg></>
                                                 ) : (
                                                     <>Complete Study Session
-                                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></>
+                                                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></>
                                                 )}
                                             </button>
                                         </div>
@@ -2089,15 +2261,14 @@ Design Philosophy:
                             )}
                         </div>
                     )}
-                    
+
                     {/* Completion Screen */}
                     {studyComplete && studyPlan && (
                         <div className="bg-white rounded-2xl shadow-xl shadow-study-900/5 overflow-hidden border border-study-100 animate-slide-up">
-                            <div className={`p-8 text-white ${
-                                progress.percentage >= 80 ? 'bg-gradient-to-r from-green-500 to-green-400' :
-                                progress.percentage >= 50 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' :
-                                'bg-gradient-to-r from-study-500 to-study-400'
-                            }`}>
+                            <div className={`p-8 text-white ${progress.percentage >= 80 ? 'bg-gradient-to-r from-green-500 to-green-400' :
+                                    progress.percentage >= 50 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' :
+                                        'bg-gradient-to-r from-study-500 to-study-400'
+                                }`}>
                                 <div className="text-center">
                                     <div className="text-6xl mb-4">🎓</div>
                                     <h3 className="font-display font-bold text-3xl mb-2">Study Session Complete!</h3>
@@ -2105,28 +2276,26 @@ Design Philosophy:
                                     <p className="text-2xl font-bold mt-2">{progress.completed} of {progress.total} correct ({progress.percentage}%)</p>
                                 </div>
                             </div>
-                            
+
                             <div className="p-6 space-y-6">
                                 <div className="text-center">
                                     <p className="text-lg text-gray-600">
                                         {progress.percentage >= 80 ? "Outstanding work! You've shown great understanding! 🌟" :
-                                         progress.percentage >= 50 ? "Good effort! Keep practicing to strengthen your skills! 💪" :
-                                         "Every attempt is a learning opportunity! Try again to improve! 📚"}
+                                            progress.percentage >= 50 ? "Good effort! Keep practicing to strengthen your skills! 💪" :
+                                                "Every attempt is a learning opportunity! Try again to improve! 📚"}
                                     </p>
                                 </div>
-                                
+
                                 {/* Steps Review */}
                                 <div>
                                     <h4 className="font-display font-semibold text-lg text-chalk mb-4">Steps Review</h4>
                                     <div className="space-y-3">
                                         {studyPlan.steps.map((step, idx) => (
-                                            <div key={idx} className={`p-4 rounded-lg border ${
-                                                stepResults[idx]?.is_correct ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                                            }`}>
+                                            <div key={idx} className={`p-4 rounded-lg border ${stepResults[idx]?.is_correct ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                                                }`}>
                                                 <div className="flex items-start gap-3">
-                                                    <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm ${
-                                                        stepResults[idx]?.is_correct ? 'bg-green-500' : 'bg-red-500'
-                                                    }`}>
+                                                    <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm ${stepResults[idx]?.is_correct ? 'bg-green-500' : 'bg-red-500'
+                                                        }`}>
                                                         {stepResults[idx]?.is_correct ? '✓' : '✗'}
                                                     </div>
                                                     <div className="flex-1">
@@ -2147,7 +2316,7 @@ Design Philosophy:
                                         ))}
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex gap-4">
                                     <button onClick={handleReset} className="flex-1 bg-study-600 text-white font-display font-semibold py-3 px-6 rounded-xl hover:bg-study-700 transition-all btn-press">
                                         Study New Problem
@@ -2168,7 +2337,7 @@ Design Philosophy:
                 </div>
             );
         };
-        
+
         // =======================================================================
         // QUIZ MODE COMPONENT
         // =======================================================================
@@ -2185,20 +2354,20 @@ Design Philosophy:
             const [evaluating, setEvaluating] = useState(false);
             const [error, setError] = useState(null);
             const [quizComplete, setQuizComplete] = useState(false);
-            
+
             const topics = [
                 { value: 'algebra', label: 'Algebra', emoji: '📊' }, { value: 'geometry', label: 'Geometry', emoji: '📐' },
                 { value: 'calculus', label: 'Calculus', emoji: '∫' }, { value: 'trigonometry', label: 'Trigonometry', emoji: '📈' },
                 { value: 'statistics', label: 'Statistics', emoji: '📉' }, { value: 'linear algebra', label: 'Linear Algebra', emoji: '🔢' },
             ];
-            
+
             const difficulties = [
                 { value: 'easy', label: 'Easy', color: 'bg-green-100 text-green-700' },
                 { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700' },
                 { value: 'hard', label: 'Hard', color: 'bg-red-100 text-red-700' },
                 { value: 'mixed', label: 'Mixed', color: 'bg-purple-100 text-purple-700' },
             ];
-            
+
             const handleGenerateQuiz = async () => {
                 setLoading(true); setError(null); setQuiz(null); setCurrentQuestion(0);
                 setUserAnswers({}); setResults({}); setQuizComplete(false); setShowHint(false);
@@ -2206,7 +2375,7 @@ Design Philosophy:
                 catch (err) { setError(err.message); }
                 finally { setLoading(false); }
             };
-            
+
             const handleSubmitAnswer = async () => {
                 if (!quiz || !quiz.questions[currentQuestion]) return;
                 const question = quiz.questions[currentQuestion];
@@ -2219,29 +2388,29 @@ Design Philosophy:
                 } catch (err) { setError(err.message); }
                 finally { setEvaluating(false); }
             };
-            
+
             const handleNextQuestion = () => {
                 setShowHint(false);
                 if (currentQuestion < quiz.questions.length - 1) { setCurrentQuestion(prev => prev + 1); }
                 else { setQuizComplete(true); }
             };
-            
+
             const handleResetQuiz = () => {
                 setQuiz(null); setCurrentQuestion(0); setUserAnswers({});
                 setResults({}); setQuizComplete(false); setShowHint(false);
             };
-            
+
             const calculateScore = () => {
                 if (!quiz) return { correct: 0, total: 0, percentage: 0 };
                 const correct = Object.values(results).filter(r => r.is_correct).length;
                 const total = quiz.questions.length;
                 return { correct, total, percentage: Math.round((correct / total) * 100) };
             };
-            
+
             const currentQuestionData = quiz?.questions?.[currentQuestion];
             const currentResult = results[currentQuestion];
             const score = calculateScore();
-            
+
             return (
                 <div className="space-y-8 animate-fade-in">
                     {!quiz && !loading && (
@@ -2249,7 +2418,7 @@ Design Philosophy:
                             <div className="flex items-center gap-3 mb-8">
                                 <div className="w-12 h-12 bg-accent-100 rounded-xl flex items-center justify-center">
                                     <svg className="w-6 h-6 text-accent-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
                                 <div>
@@ -2280,23 +2449,23 @@ Design Philosophy:
                                     ))}
                                 </div>
                             </div>
-                            
+
                             <div className="mb-8">
                                 <label className="block font-display font-semibold text-chalk mb-3">Number of Questions: {numQuestions}</label>
                                 <input type="range" min="1" max="10" value={numQuestions} onChange={(e) => setNumQuestions(parseInt(e.target.value))}
-                                    className="w-full h-2 bg-tutor-200 rounded-lg appearance-none cursor-pointer"/>
+                                    className="w-full h-2 bg-tutor-200 rounded-lg appearance-none cursor-pointer" />
                             </div>
-                            
+
                             <button onClick={handleGenerateQuiz}
                                 className="w-full bg-gradient-to-r from-accent-500 to-accent-400 text-white font-display font-semibold text-lg py-4 px-8 rounded-xl shadow-lg shadow-accent-500/30 hover:from-accent-600 hover:to-accent-500 transition-all btn-press">
                                 Start Quiz
                             </button>
                         </div>
                     )}
-                    
+
                     {loading && <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 p-8 border border-tutor-100"><LoadingSpinner message="Generating your quiz..." /></div>}
                     {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
-                    
+
                     {quiz && !quizComplete && currentQuestionData && (
                         <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 overflow-hidden border border-tutor-100 animate-slide-up">
                             <div className="bg-gradient-to-r from-accent-500 to-accent-400 p-6 text-white">
@@ -2307,7 +2476,7 @@ Design Philosophy:
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {quiz.questions.map((_, idx) => (
-                                            <div key={idx} className={`w-3 h-3 rounded-full transition-all ${idx === currentQuestion ? 'bg-white scale-125' : idx < currentQuestion ? results[idx]?.is_correct ? 'bg-green-300' : 'bg-red-300' : 'bg-white/30'}`}/>
+                                            <div key={idx} className={`w-3 h-3 rounded-full transition-all ${idx === currentQuestion ? 'bg-white scale-125' : idx < currentQuestion ? results[idx]?.is_correct ? 'bg-green-300' : 'bg-red-300' : 'bg-white/30'}`} />
                                         ))}
                                     </div>
                                 </div>
@@ -2318,38 +2487,38 @@ Design Philosophy:
                                         <MathText text={currentQuestionData.question} />
                                     </div>
                                 </div>
-                                
+
                                 {currentQuestionData.hint && !currentResult && (
                                     <div>
                                         <button onClick={() => setShowHint(!showHint)} className="text-tutor-600 font-display font-medium flex items-center gap-2 hover:text-tutor-700">
-                                            <svg className={`w-4 h-4 transition-transform ${showHint ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                                            <svg className={`w-4 h-4 transition-transform ${showHint ? 'rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
                                             {showHint ? 'Hide Hint' : 'Show Hint'}
                                         </button>
                                         {showHint && <div className="mt-3 p-4 bg-tutor-50 rounded-lg border border-tutor-200 animate-fade-in"><div className="text-tutor-700"><MathText text={currentQuestionData.hint} /></div></div>}
                                     </div>
                                 )}
-                                
+
                                 {!currentResult && (
                                     <div>
                                         <label className="block font-display font-semibold text-chalk mb-2">Your Answer</label>
                                         <input type="text" value={userAnswers[currentQuestion] || ''} onChange={(e) => setUserAnswers(prev => ({ ...prev, [currentQuestion]: e.target.value }))}
                                             onKeyPress={(e) => e.key === 'Enter' && handleSubmitAnswer()} placeholder="Enter your answer..."
-                                            className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-tutor-500 transition-all input-focus"/>
+                                            className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-tutor-500 transition-all input-focus" />
                                         <button onClick={handleSubmitAnswer} disabled={evaluating || !userAnswers[currentQuestion]?.trim()}
                                             className="mt-4 w-full bg-tutor-600 text-white font-display font-semibold py-3 px-6 rounded-xl hover:bg-tutor-700 disabled:bg-gray-300 transition-all btn-press">
                                             {evaluating ? 'Checking...' : 'Submit Answer'}
                                         </button>
                                     </div>
                                 )}
-                                
+
                                 {currentResult && (
                                     <div className={`rounded-xl p-6 animate-slide-up ${currentResult.is_correct ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
                                         <div className="flex items-center gap-3 mb-3">
                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${currentResult.is_correct ? 'bg-green-500' : 'bg-red-500'}`}>
                                                 {currentResult.is_correct ? (
-                                                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
                                                 ) : (
-                                                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                                    <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                                                 )}
                                             </div>
                                             <h4 className={`font-display font-bold text-xl ${currentResult.is_correct ? 'text-green-800' : 'text-red-800'}`}>
@@ -2367,7 +2536,7 @@ Design Philosophy:
                             </div>
                         </div>
                     )}
-                    
+
                     {quizComplete && quiz && (
                         <div className="bg-white rounded-2xl shadow-xl shadow-tutor-900/5 overflow-hidden border border-tutor-100 animate-slide-up">
                             <div className={`p-8 text-white ${score.percentage >= 70 ? 'bg-gradient-to-r from-green-500 to-green-400' : score.percentage >= 40 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' : 'bg-gradient-to-r from-red-500 to-red-400'}`}>
@@ -2388,7 +2557,7 @@ Design Philosophy:
                 </div>
             );
         };
-        
+
         // =======================================================================
         // MAIN APP COMPONENT
         // =======================================================================
@@ -2396,23 +2565,23 @@ Design Philosophy:
             const [isLoggedIn, setIsLoggedIn] = useState(false);
             const [user, setUser] = useState(null);
             const [activeTab, setActiveTab] = useState('solver');
-            
+
             const handleLogin = (userData, apiKey) => { setUser(userData); setIsLoggedIn(true); };
-            
+
             const handleLogout = () => {
                 localStorage.removeItem(STORAGE_KEYS.USER);
                 setUser(null); setIsLoggedIn(false);
             };
-            
+
             if (!isLoggedIn) return <LoginScreen onLogin={handleLogin} />;
-            
+
             return (
                 <div className="min-h-screen">
                     <header className="bg-chalk text-white py-6 px-4">
                         <div className="max-w-4xl mx-auto">
                             <div className="flex justify-end mb-4">
                                 <div className="flex items-center gap-3">
-                                    {user?.picture ? <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" referrerPolicy="no-referrer"/> : (
+                                    {user?.picture ? <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" /> : (
                                         <div className="w-8 h-8 bg-tutor-400 rounded-full flex items-center justify-center">
                                             <span className="text-white font-display font-bold text-sm">{user?.name?.[0] || 'G'}</span>
                                         </div>
@@ -2432,7 +2601,7 @@ Design Philosophy:
                                 <TabButton active={activeTab === 'solver'} onClick={() => setActiveTab('solver')} color="tutor">
                                     <span className="flex items-center gap-2">
                                         <svg className="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                                            <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
                                         </svg>
                                         Solver
                                     </span>
@@ -2440,7 +2609,7 @@ Design Philosophy:
                                 <TabButton active={activeTab === 'study'} onClick={() => setActiveTab('study')} color="study">
                                     <span className="flex items-center gap-2">
                                         <svg className="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
                                         </svg>
                                         Study
                                     </span>
@@ -2448,7 +2617,7 @@ Design Philosophy:
                                 <TabButton active={activeTab === 'quiz'} onClick={() => setActiveTab('quiz')} color="accent">
                                     <span className="flex items-center gap-2">
                                         <svg className="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
                                         </svg>
                                         Quiz
                                     </span>
@@ -2470,7 +2639,7 @@ Design Philosophy:
                 </div>
             );
         };
-        
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
