@@ -699,7 +699,7 @@ def validate_solution_response(solution, source_description="uploaded file"):
                        'Could not identify', 'Unable to solve']
     
     def is_valid_answer(ans):
-        if not ans:
+        if not ans: 
             return False
         ans_str = str(ans).strip().lower()
         for invalid in invalid_answers:
