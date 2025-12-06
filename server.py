@@ -131,7 +131,8 @@ When solving problems:
 5. Provide the final answer clearly marked (also in LaTeX format)
 6. If applicable, verify the answer or explain how to check it
 
-You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
+CRITICAL: You MUST respond with ONLY valid JSON. No markdown, no code blocks, no extra text.
+Return this exact structure:
 {
     "problem_type": "The category of math problem",
     "concepts": ["List of mathematical concepts used"],
@@ -154,7 +155,7 @@ FILE_SOLVER_SYSTEM_PROMPT = """You are a math tutor. Look at this image and solv
 
 Use LaTeX notation for ALL math expressions, wrapped in $ symbols (e.g., $2x + 5 = 13$, $\\frac{1}{2}$, $\\sqrt{x}$).
 
-IMPORTANT: Respond with ONLY a JSON object (no markdown, no other text):
+CRITICAL: Respond with ONLY a JSON object. No markdown code blocks, no extra text.
 
 {
     "problem_detected": "the math problem from the image in LaTeX format",
@@ -175,7 +176,7 @@ PDF_TEXT_SOLVER_PROMPT = """You are a math tutor. Solve the math problem below s
 
 Use LaTeX notation for ALL math expressions, wrapped in $ symbols (e.g., $2x + 5 = 13$, $\\frac{1}{2}$, $\\sqrt{x}$).
 
-IMPORTANT: Your response must be ONLY a JSON object with this exact structure (no other text):
+CRITICAL: Your response must be ONLY a JSON object. No markdown, no code blocks, no extra text.
 
 {
     "problem_detected": "restate the problem in LaTeX format",
@@ -204,7 +205,8 @@ When creating quiz questions:
 4. Cover the requested topic area thoroughly
 5. Use $...$ for all mathematical notation in questions and answers
 
-You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
+CRITICAL: Respond with ONLY valid JSON. No markdown code blocks, no extra text.
+
 {
     "quiz_topic": "The mathematical topic being tested",
     "questions": [
@@ -228,7 +230,8 @@ Compare the student's answer to the correct answer and provide feedback.
 
 Use LaTeX notation for any math expressions in your feedback, wrapped in $ symbols.
 
-You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
+CRITICAL: Respond with ONLY valid JSON. No markdown code blocks, no extra text.
+
 {
     "is_correct": true or false,
     "feedback": "Encouraging feedback (use $...$ for any math)",
@@ -254,7 +257,8 @@ For the given problem:
 3. For each step, provide a description of what needs to be done (but NOT the answer)
 4. Include what mathematical operation or concept is required
 
-You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
+CRITICAL: Respond with ONLY valid JSON. No markdown code blocks, no extra text.
+
 {
     "problem": "The original problem restated in LaTeX format, e.g. Solve $2x + 5 = 13$",
     "problem_type": "The category of math problem",
@@ -294,7 +298,8 @@ Based on the hint level requested (1 = gentle, 2 = moderate, 3 = strong):
 - Level 2: Give a more specific direction or partial setup
 - Level 3: Walk them most of the way there, leaving only the final calculation
 
-You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
+CRITICAL: Respond with ONLY valid JSON. No markdown code blocks, no extra text.
+
 {
     "hint": "The helpful hint text (use $...$ for any math)",
     "hint_level": 1,
@@ -316,7 +321,8 @@ Consider:
 2. Is it in an acceptable form (equivalent forms should be accepted)?
 3. If wrong, what might have caused the error?
 
-You MUST respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
+CRITICAL: Respond with ONLY valid JSON. No markdown code blocks, no extra text.
+
 {
     "is_correct": true or false,
     "feedback": "Specific feedback about their answer (use $...$ for any math)",
@@ -351,7 +357,9 @@ def clean_json_response(text):
     Clean the response text to extract valid JSON.
     
     Gemini sometimes wraps JSON in markdown code blocks or adds extra text.
-    This function extracts just the JSON portion.
+    This function also handles LaTeX escape sequences that break JSON parsing.
+    
+    FIXED VERSION: Handles markdown code blocks AND LaTeX backslash escaping.
     
     Args:
         text: Raw response text from Gemini
@@ -362,25 +370,106 @@ def clean_json_response(text):
     if not text:
         return "{}"
     
-    # Remove markdown code blocks if present
-    text = re.sub(r'```json\s*', '', text)
-    text = re.sub(r'```\s*', '', text)
-    text = re.sub(r'```', '', text)
+    original_text = text
     
-    # Remove any leading/trailing whitespace
+    # Step 1: Remove markdown code blocks
+    text = re.sub(r'^[\s]*```(?:json)?[\s]*\n?', '', text, flags=re.IGNORECASE | re.MULTILINE)
+    text = re.sub(r'\n?[\s]*```[\s]*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'```', '', text)
     text = text.strip()
     
-    # Try to find JSON object in the text
-    start = text.find('{')
-    end = text.rfind('}')
+    # Step 2: Find JSON boundaries
+    first_brace = text.find('{')
+    last_brace = text.rfind('}')
     
-    if start != -1 and end != -1:
-        text = text[start:end + 1]
-    else:
-        # If no JSON found, return a default error response
-        return '{"error": "No valid JSON found in response"}'
+    if first_brace == -1 or last_brace == -1 or last_brace <= first_brace:
+        return json.dumps({
+            "error": "No valid JSON found",
+            "problem_type": "Error",
+            "concepts": [],
+            "steps": [{"step_number": 1, "action": "Error", "explanation": "Response parsing failed. Please try again.", "result": "N/A"}],
+            "final_answer": "Error - please try again",
+            "verification": "N/A"
+        })
     
-    return text.strip()
+    text = text[first_brace:last_brace + 1]
+    
+    # Step 3: Try to parse as-is first
+    try:
+        json.loads(text)
+        return text
+    except json.JSONDecodeError:
+        pass
+    
+    # Step 4: Fix LaTeX backslashes - Gemini returns \sqrt but JSON needs \\sqrt
+    # The tricky part: \f is a valid JSON escape (form feed), but \frac is LaTeX!
+    # We need to detect LaTeX commands vs actual JSON escapes
+    fixed_text = ""
+    i = 0
+    while i < len(text):
+        if text[i] == '\\':
+            if i + 1 < len(text):
+                next_char = text[i + 1]
+                if next_char == '\\':
+                    # Already escaped \\, keep both
+                    fixed_text += '\\\\'
+                    i += 2
+                elif next_char == 'u' and i + 5 < len(text):
+                    # Unicode escape \uXXXX - check if it's valid hex
+                    potential_unicode = text[i+2:i+6]
+                    if all(c in '0123456789abcdefABCDEF' for c in potential_unicode):
+                        fixed_text += text[i:i+6]
+                        i += 6
+                    else:
+                        # Not valid unicode, escape the backslash
+                        fixed_text += '\\\\'
+                        i += 1
+                elif next_char in 'nrtb"/':
+                    # Valid JSON escape sequences (NOT including \f - see below)
+                    fixed_text += text[i:i+2]
+                    i += 2
+                elif next_char == 'f':
+                    # Special case: \f could be form feed OR start of \frac, \forall, etc.
+                    # Check if followed by more letters (indicating LaTeX command)
+                    if i + 2 < len(text) and text[i + 2].isalpha():
+                        # It's a LaTeX command like \frac, \forall - escape the backslash
+                        fixed_text += '\\\\'
+                        i += 1
+                    else:
+                        # Actual form feed escape (rare, but keep it)
+                        fixed_text += text[i:i+2]
+                        i += 2
+                else:
+                    # LaTeX command like \sqrt, \int, \alpha - escape the backslash
+                    fixed_text += '\\\\'
+                    i += 1
+            else:
+                fixed_text += '\\\\'
+                i += 1
+        else:
+            fixed_text += text[i]
+            i += 1
+    
+    text = fixed_text
+    
+    # Step 5: Fix trailing commas
+    text = re.sub(r',\s*}', '}', text)
+    text = re.sub(r',\s*]', ']', text)
+    
+    # Step 6: Final parse attempt
+    try:
+        json.loads(text)
+        return text
+    except json.JSONDecodeError as e:
+        print(f"JSON parse error after fixes: {e}")
+        return json.dumps({
+            "error": "JSON parse error",
+            "problem_type": "Error",
+            "concepts": [],
+            "steps": [{"step_number": 1, "action": "Parse Error", "explanation": "Could not parse AI response. Please try again.", "result": "N/A"}],
+            "final_answer": "Error - please try again",
+            "verification": "N/A"
+        })
 
 
 def allowed_file(filename, file_type='image'):
@@ -553,7 +642,7 @@ def call_gemini(prompt, system_prompt, api_key):
     model = genai.GenerativeModel('gemini-2.0-flash')
     
     # Combine system prompt with user prompt
-    full_prompt = f"{system_prompt}\n\n{prompt}"
+    full_prompt = f"{system_prompt}\n\nREMINDER: Return ONLY raw JSON, no markdown code blocks.\n\n{prompt}"
     
     # Generate response from Gemini
     response = model.generate_content(full_prompt)
@@ -634,7 +723,7 @@ def call_gemini_with_image(images, prompt, system_prompt, api_key):
         content_parts.append(images)
     
     # Add system prompt and user prompt as text
-    full_prompt = system_prompt
+    full_prompt = system_prompt + "\n\nREMINDER: Return ONLY raw JSON, no markdown code blocks."
     if prompt:
         full_prompt += f"\n\nAdditional context from user: {prompt}"
     
@@ -699,7 +788,7 @@ def validate_solution_response(solution, source_description="uploaded file"):
                        'Could not identify', 'Unable to solve']
     
     def is_valid_answer(ans):
-        if not ans: 
+        if not ans:
             return False
         ans_str = str(ans).strip().lower()
         for invalid in invalid_answers:
@@ -1431,7 +1520,7 @@ Respond with ONLY valid JSON in this format:
     "tip": "A tip for solving similar steps in the future"
 }}"""
         
-        system_prompt = "You are a helpful math tutor. Provide the solution for the requested step. Respond with ONLY valid JSON."
+        system_prompt = "You are a helpful math tutor. Provide the solution for the requested step. Respond with ONLY valid JSON, no markdown code blocks."
         
         solution = call_gemini(solution_prompt, system_prompt, api_key)
         
