@@ -346,6 +346,9 @@ If Google Sign-In shows errors:
 
 ---
 
+## Demo Video
+<https://youtu.be/o1BO2XXgcSM>
+---
 ## 📁 Project Structure
 
 ```
